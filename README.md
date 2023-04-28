@@ -18,7 +18,7 @@ can evaluate to a `boolean`, `number`, `string` or other value.
 - Granular rule evaluation
 - Human-readable JSON rules
 - Infinite nesting of rule sets
-- Supports `any`, `all` and `none` type conditions
+- Supports `any`, `all` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, and `NotIn` operators
 - Supports ruleset validation and debugging
 
@@ -359,8 +359,10 @@ const rule = {
 ]}
 ```
 
-In such a setup the result of our evaluation will be the value of the condition which was met first. 
+In such a setup the result of our evaluation will be the value of the `result` property in condition which was met first. 
 
+When using granular rules, the order of rules matters. The first rule which is met will be the one which is used to 
+calculate the discount.
 
 ```javascript
 // Define the criteria which will be evaluated against the ruleset
