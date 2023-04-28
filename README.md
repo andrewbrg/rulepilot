@@ -281,7 +281,7 @@ It might be the case that we want to give different discounts to people based on
 we want to give a 10% discount to all users who `18+` or have a `student card` and a 5% discount to the rest of the
 users who meet the other criteria.
 
-To accomplish this, we can assign a value to each condition which will be used to calculate the discount.
+To accomplish this, we can assign a `result` to each condition which will be used to calculate the discount.
 
 ```javascript
 const rule = {
@@ -339,7 +339,7 @@ const rule = {
                 ]
             }
         ],
-        "value": 5
+        "result": 5
     },
     {
         "any": [
@@ -354,7 +354,7 @@ const rule = {
                 "value": true
             }
         ],
-        "value": 10
+        "result": 10
     }
 ]}
 ```
