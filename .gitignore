@@ -1,0 +1,8 @@
+# IDEs
+.idea
+.vscode
+
+# Other
+dist
+coverage
+node_modules

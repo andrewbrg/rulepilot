@@ -1,0 +1,44 @@
+{
+  "name": "json-rule-engine",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Rule parsing engine for JSON rule-sets",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "jest --testPathPattern=test --detectOpenHandles --color --forceExit",
+    "build": "tsc src/index.ts --outDir dist --module commonjs --target es6 --lib es6 --declaration --declarationMap --sourceMap --esModuleInterop --resolveJsonModule --skipLibCheck --pretty",
+    "prettier": "prettier --write ."
+  },
+  "repository": "https://github.com/andrewbrg/json-rule-engine.git",
+  "author": "Andrew Borg <andrew.borg@redacreltd.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@jest/globals": "^29.5.0",
+    "@types/jest": "^29.5.1",
+    "@types/node": "^18.16.1",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.8",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.4"
+  },
+  "jest": {
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coverageReporters": [
+      "lcov"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!variables/.*)"
+    ]
+  }
+}
