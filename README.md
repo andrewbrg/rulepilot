@@ -1,6 +1,6 @@
-<img src=".github/logo.png" width="180" />
+<img src=".github/logo.png" width="180" alt="RulePilot" />
 
-####
+[![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot)
 
 | Statements | Functions | Lines |
 | -----------|-----------|-------|
@@ -67,10 +67,10 @@ For the discount to be applied, the user must be from either the `UK or Finland`
 price must be greater than or equal to `120.00`.
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot, Rule } from 'rulepilot';
 
 // Define a ruleset which caters for your needs
-const rule = {
+const rule: Rule = {
     "conditions": {
         "all": [
             {
@@ -121,10 +121,10 @@ require that the user is either `over 18` years old or `has a valid student card
 Take note of how the `conditions` property is now an array of objects.
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot, Rule } from 'rulepilot';
 
 // Define a ruleset which caters for your needs
-const rule = {
+const rule: Rule = {
     "conditions": [
         {
             "all": [
@@ -187,7 +187,7 @@ For example, we can add a requirement that a discount will also be given to all 
 18+ or have a valid student card _(irrelevant of any other conditions set)_.
 
 ```typescript
-const rule = {
+const rule: Rule = {
     "conditions": [
         {
             "any": [
@@ -237,7 +237,7 @@ The criteria can be narrowed down further by specifying `Swedish` users cannot b
 otherwise they must spend `more than 200.00` at checkout.
 
 ```typescript
-const rule = {
+const rule: Rule = {
     "conditions": [{
         "any": [
             {
@@ -319,7 +319,7 @@ users who meet the other criteria.
 To accomplish this, we can assign a `result` to each condition which will be used to calculate the discount.
 
 ```typescript
-const rule = {
+const rule: Rule = {
     "conditions": [{
         "any": [
             {
@@ -447,9 +447,9 @@ Each and all of these condition types can be mixed and matched or nested to crea
 In granular rules, it is possible to set a default value which will be used if no conditions are met.
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot, Rule } from 'rulepilot';
 
-const rule = {
+const rule: Rule = {
     "conditions": [{
         // ..
     }],
@@ -473,9 +473,9 @@ The `validate()` method will return `true` if the ruleset is valid, otherwise it
 describing the problem along with the problem node from the rule for easy debugging.
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot, Rule } from 'rulepilot';
 
-const rule = {
+const rule: Rule = {
     // ...
 }
 

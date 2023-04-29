@@ -83,7 +83,7 @@ export class Validator {
         return {
           isValid: false,
           error: {
-            message: "Nested conditions cannot have a result property.",
+            message: 'Nested conditions cannot have a property "result".',
             element: node,
           },
         };
@@ -123,7 +123,8 @@ export class Validator {
       };
     }
 
-    if (!Object.values(Operator).includes(constraint.operator as Operator)) {
+    const operators = ["==", "!=", ">", "<", ">=", "<=", "in", "not in"];
+    if (!operators.includes(constraint.operator as Operator)) {
       return {
         isValid: false,
         error: {
@@ -135,14 +136,14 @@ export class Validator {
 
     // We must check that the value is an array if the operator is 'in' or 'not in'.
     if (
-      [Operator.In, Operator.NotIn].includes(constraint.operator as Operator) &&
-      !(constraint.value instanceof Array)
+      ["in", "not in"].includes(constraint.operator) &&
+      !Array.isArray(constraint.value)
     ) {
       return {
         isValid: false,
         error: {
           message:
-            'The "value" must be an array if the "operator" is "in" or "not in"',
+            'Constraint "value" must be an array if the "operator" is "in" or "not in"',
           element: constraint,
         },
       };

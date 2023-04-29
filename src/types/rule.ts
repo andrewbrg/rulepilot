@@ -1,29 +1,25 @@
-export enum Operator {
-  Equal = "==",
-  NotEqual = "!=",
-  GreaterThan = ">",
-  GreaterThanOrEqual = ">=",
-  LessThan = "<",
-  LessThanOrEqual = "<=",
-  In = "in",
-  NotIn = "not in",
-}
+export type Operator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "not in";
+export type ConditionType = "any" | "all" | "none";
 
 export interface Constraint {
   field: string;
-  operator: Operator | string;
-  value?: string | number | boolean | string[] | number[] | boolean[];
+  operator: Operator;
+  value?:
+    | string
+    | number
+    | boolean
+    | object
+    | (string | number | boolean | object)[];
 }
 
-export type ConditionType = "any" | "all" | "none";
-
 export interface Condition {
-  any?: Constraint[] | Condition[];
-  all?: Constraint[] | Condition[];
-  result?: string | number | boolean;
+  any?: (Constraint | Condition)[];
+  all?: (Constraint | Condition)[];
+  none?: (Constraint | Condition)[];
+  result?: string | number | boolean | object;
 }
 
 export interface Rule {
   conditions: Condition | Condition[];
-  default?: string | number | boolean;
+  default?: string | number | boolean | object;
 }

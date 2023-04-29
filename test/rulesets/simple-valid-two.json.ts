@@ -1,4 +1,6 @@
-export const simpleValidTwoJson = {
+import { Rule } from "../../src";
+
+export const simpleValidTwoJson: Rule = {
   conditions: {
     any: [
       {
@@ -49,4 +51,4 @@ export const simpleValidTwoJson = {
       },
     ],
   },
-};
+} as Rule;

@@ -1,4 +1,6 @@
-export const simpleValidJson = {
+import { Rule } from "../../src";
+
+export const simpleValidJson: Rule = {
   conditions: {
     any: [
       {

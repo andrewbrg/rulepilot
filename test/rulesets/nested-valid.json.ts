@@ -1,4 +1,6 @@
-export const nestedValidJson = {
+import { Rule } from "../../src";
+
+export const nestedValidJson: Rule = {
   conditions: [
     {
       any: [

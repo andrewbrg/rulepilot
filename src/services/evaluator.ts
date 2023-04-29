@@ -1,5 +1,5 @@
 import { ObjectDiscovery } from "./object-discovery";
-import { Condition, Constraint, Operator, Rule } from "../types/rule";
+import { Condition, Constraint, Rule } from "../types/rule";
 
 export class Evaluator {
   private objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
@@ -88,24 +88,24 @@ export class Evaluator {
     const criterion = criteria[constraint.field];
 
     switch (constraint.operator) {
-      case Operator.Equal:
+      case "==":
         return criterion == constraint.value;
-      case Operator.NotEqual:
+      case "!=":
         return criterion != constraint.value;
-      case Operator.GreaterThan:
+      case ">":
         return criterion > constraint.value;
-      case Operator.GreaterThanOrEqual:
+      case ">=":
         return criterion >= constraint.value;
-      case Operator.LessThan:
+      case "<":
         return criterion < constraint.value;
-      case Operator.LessThanOrEqual:
+      case "<=":
         return criterion <= constraint.value;
-      case Operator.In:
+      case "in":
         return (
           Array.isArray(constraint.value) &&
           constraint.value.includes(criterion as never)
         );
-      case Operator.NotIn:
+      case "not in":
         return (
           !Array.isArray(constraint.value) ||
           !constraint.value.includes(criterion as never)

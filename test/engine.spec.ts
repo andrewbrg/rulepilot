@@ -12,7 +12,7 @@ describe("RulePilot engine correctly", () => {
     expect(
       RulePilot.validate({
         conditions: [
-          { all: [{ field: "name", operator: Operator.Equal, value: "test" }] },
+          { all: [{ field: "name", operator: "==", value: "test" }] },
         ],
       }).isValid
     ).toEqual(true);
@@ -22,7 +22,9 @@ describe("RulePilot engine correctly", () => {
     expect(
       RulePilot.validate({
         conditions: [
-          { all: [{ field: "name", operator: "*", value: "test" }] },
+          {
+            all: [{ field: "name", operator: "*" as Operator, value: "test" }],
+          },
         ],
       }).isValid
     ).toEqual(false);
@@ -48,7 +50,7 @@ describe("RulePilot engine correctly", () => {
     expect(
       RulePilot.validate({
         conditions: [
-          { all: [{ field: "name", operator: Operator.In, value: "test" }] },
+          { all: [{ field: "name", operator: "in", value: "test" }] },
         ],
       }).isValid
     ).toEqual(false);
@@ -56,7 +58,7 @@ describe("RulePilot engine correctly", () => {
     expect(
       RulePilot.validate({
         conditions: [
-          { all: [{ field: "name", operator: Operator.NotIn, value: "test" }] },
+          { all: [{ field: "name", operator: "not in", value: "test" }] },
         ],
       }).isValid
     ).toEqual(false);
