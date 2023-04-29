@@ -481,6 +481,12 @@ const rule: Rule = {
 const validationResult: ValidationResult = RuleEngine.validate(rule);
 ```
 
+## Building Distribution
+
+```bash
+yarn build
+```
+
 ## Running Tests
 
 ```bash
