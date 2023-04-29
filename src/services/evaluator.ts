@@ -38,25 +38,35 @@ export class Evaluator {
     // The condition must have an 'any' or 'all' property.
     const type = this.objectDiscovery.conditionType(condition);
 
-    // If the type is 'all', we should set the initial result to true,
-    // otherwise we should set it to false.
-    let result = "all" === type;
+    // If the type is 'all' or 'none', we should set the initial
+    // result to true, otherwise we should set it to false.
+    let result = ["all", "none"].includes(type);
 
-    for (const item of condition[type]) {
-      // If the item is a condition, we should evaluate it.
-      if (this.objectDiscovery.isCondition(item)) {
-        result =
-          "any" === type
-            ? result || this.evaluateCondition(item as Condition, criteria)
-            : result && this.evaluateCondition(item as Condition, criteria);
+    // Check each node in the condition.
+    for (const node of condition[type]) {
+      let fn;
+      if (this.objectDiscovery.isCondition(node)) {
+        fn = "evaluateCondition";
+      }
+      if (this.objectDiscovery.isConstraint(node)) {
+        fn = "checkConstraint";
       }
 
-      // If the item is a constraint, we should check it.
-      if (this.objectDiscovery.isConstraint(item)) {
-        result =
-          "any" === type
-            ? result || this.checkConstraint(item as Constraint, criteria)
-            : result && this.checkConstraint(item as Constraint, criteria);
+      // Do not process unrecognized items.
+      if (!fn) {
+        continue;
+      }
+
+      // Process the node
+      switch (type) {
+        case "any":
+          result = result || this[fn](node, criteria);
+          break;
+        case "all":
+          result = result && this[fn](node, criteria);
+          break;
+        case "none":
+          result = result && !this[fn](node, criteria);
       }
     }
 

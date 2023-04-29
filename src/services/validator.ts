@@ -57,20 +57,23 @@ export class Validator {
   ): ValidationResult {
     // Check to see if the condition is valid.
     let result = this.isValidCondition(condition);
+    if (!result.isValid) {
+      return result;
+    }
 
     // Set the type of condition.
     const type = this.objectDiscovery.conditionType(condition);
 
     // Validate each item in the condition.
-    for (const item of condition[type]) {
-      if (this.objectDiscovery.isCondition(item)) {
-        const subResult = this.validateCondition(item as Condition, depth + 1);
+    for (const node of condition[type]) {
+      if (this.objectDiscovery.isCondition(node)) {
+        const subResult = this.validateCondition(node as Condition, depth + 1);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
       }
 
-      if (this.objectDiscovery.isConstraint(item)) {
-        const subResult = this.validateConstraint(item as Constraint);
+      if (this.objectDiscovery.isConstraint(node)) {
+        const subResult = this.validateConstraint(node as Constraint);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
       }
@@ -81,7 +84,7 @@ export class Validator {
           isValid: false,
           error: {
             message: "Nested conditions cannot have a result property.",
-            element: item,
+            element: node,
           },
         };
       }
@@ -163,13 +166,18 @@ export class Validator {
       };
     }
 
-    // A valid condition must have an 'any' or 'all' property, but cannot have both.
-    if ("any" in obj && "all" in obj) {
+    const isAny = "any" in obj;
+    const isAll = "all" in obj;
+    const isNone = "none" in obj;
+
+    // A valid condition must have an 'any', 'all', or 'none' property,
+    // but cannot have more than one.
+    if ((isAny && isAll) || (isAny && isNone) || (isAll && isNone)) {
       return {
         isValid: false,
         error: {
           message:
-            'A condition cannot have both an "any" and an "all" property.',
+            'A condition cannot have more than one "any", "all", or "none" property.',
           element: obj,
         },
       };

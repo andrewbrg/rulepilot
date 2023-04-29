@@ -15,7 +15,7 @@ export interface Constraint {
   value?: string | number | boolean | string[] | number[] | boolean[];
 }
 
-export type ConditionType = "any" | "all";
+export type ConditionType = "any" | "all" | "none";
 
 export interface Condition {
   any?: Constraint[] | Condition[];

@@ -19,6 +19,8 @@ export class RuleEngine {
     criteria: object,
     trustRuleset = false
   ): any {
+    // Before we evaluate the rule, we should validate it.
+    // However, if `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRuleset && RuleEngine.validate(rule);
     if (!trustRuleset && !validationResult.isValid) {
       throw new Error(JSON.stringify(validationResult.error));

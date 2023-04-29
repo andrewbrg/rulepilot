@@ -5,8 +5,8 @@ export class ObjectDiscovery {
    * Returns the type of condition passed to the function.
    * @param condition The condition to check.
    */
-  conditionType(condition: Condition): ConditionType {
-    return "any" in condition ? "any" : "all";
+  conditionType(condition: Condition): ConditionType | null {
+    return "any" in condition ? "any" : "all" in condition ? "all" : "none";
   }
 
   /**
@@ -14,7 +14,7 @@ export class ObjectDiscovery {
    * @param obj The object to check.
    */
   isCondition(obj: any): boolean {
-    return "any" in obj || "all" in obj;
+    return "any" in obj || "all" in obj || "none" in obj;
   }
 
   /**
