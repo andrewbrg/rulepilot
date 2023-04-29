@@ -1,3 +1,3 @@
 export * from "./types/rule";
-export { RuleEngine } from "./services/rule-engine";
+export { RulePilot } from "./services/rule-pilot";
 export { ValidationResult } from "./services/validator";

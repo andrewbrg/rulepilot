@@ -2,7 +2,7 @@ import { Rule } from "../types/rule";
 import { Evaluator } from "./evaluator";
 import { ValidationResult, Validator } from "./validator";
 
-export class RuleEngine {
+export class RulePilot {
   private static validator: Validator = new Validator();
   private static evaluator: Evaluator = new Evaluator();
 
@@ -21,12 +21,12 @@ export class RuleEngine {
   ): any {
     // Before we evaluate the rule, we should validate it.
     // However, if `trustRuleset` is set to true, we will skip validation.
-    const validationResult = !trustRuleset && RuleEngine.validate(rule);
+    const validationResult = !trustRuleset && RulePilot.validate(rule);
     if (!trustRuleset && !validationResult.isValid) {
       throw new Error(JSON.stringify(validationResult.error));
     }
 
-    return RuleEngine.evaluator.evaluate(rule, criteria);
+    return RulePilot.evaluator.evaluate(rule, criteria);
   }
 
   /**
@@ -39,6 +39,6 @@ export class RuleEngine {
    * @param rule The rule to validate.
    */
   public static validate(rule: Rule): ValidationResult {
-    return RuleEngine.validator.validate(rule);
+    return RulePilot.validator.validate(rule);
   }
 }

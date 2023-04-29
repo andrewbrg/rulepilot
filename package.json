@@ -1,5 +1,5 @@
 {
-  "name": "json-rule-engine",
+  "name": "rulepilot",
   "type": "module",
   "version": "1.0.0",
   "description": "Rule parsing engine for JSON rules",

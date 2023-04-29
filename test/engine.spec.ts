@@ -1,4 +1,4 @@
-import { RuleEngine, Operator } from "../src";
+import { RulePilot, Operator } from "../src";
 
 import { simpleValidJson } from "./rulesets/simple-valid.json";
 import { simpleValidTwoJson } from "./rulesets/simple-valid-two.json";
@@ -7,10 +7,10 @@ import { simpleInValidJson } from "./rulesets/simple-invalid.json";
 import { nestedValidJson } from "./rulesets/nested-valid.json";
 import { nestedInValidJson } from "./rulesets/nested-invalid.json";
 
-describe("The RuleEngine correctly", () => {
+describe("RulePilot correctly", () => {
   it("Validates a good ruleset", () => {
     expect(
-      RuleEngine.validate({
+      RulePilot.validate({
         conditions: [
           { all: [{ field: "name", operator: Operator.Equal, value: "test" }] },
         ],
@@ -20,7 +20,7 @@ describe("The RuleEngine correctly", () => {
 
   it("Identifies a bad operator", () => {
     expect(
-      RuleEngine.validate({
+      RulePilot.validate({
         conditions: [
           { all: [{ field: "name", operator: "*", value: "test" }] },
         ],
@@ -29,7 +29,7 @@ describe("The RuleEngine correctly", () => {
   });
 
   it("Identifies an invalid ruleset", () => {
-    const validation = RuleEngine.validate(nestedInValidJson);
+    const validation = RulePilot.validate(nestedInValidJson);
 
     expect(validation.isValid).toEqual(false);
     expect(validation.error.message).toEqual(
@@ -38,7 +38,7 @@ describe("The RuleEngine correctly", () => {
   });
 
   it("Identifies an empty ruleset", () => {
-    const validation = RuleEngine.validate(simpleInValidJson);
+    const validation = RulePilot.validate(simpleInValidJson);
 
     expect(validation.isValid).toEqual(false);
     expect(validation.error.message).toEqual("Invalid condition structure.");
@@ -46,7 +46,7 @@ describe("The RuleEngine correctly", () => {
 
   it("Detects invalid values for In/Not In operators", () => {
     expect(
-      RuleEngine.validate({
+      RulePilot.validate({
         conditions: [
           { all: [{ field: "name", operator: Operator.In, value: "test" }] },
         ],
@@ -54,7 +54,7 @@ describe("The RuleEngine correctly", () => {
     ).toEqual(false);
 
     expect(
-      RuleEngine.validate({
+      RulePilot.validate({
         conditions: [
           { all: [{ field: "name", operator: Operator.NotIn, value: "test" }] },
         ],
@@ -63,25 +63,25 @@ describe("The RuleEngine correctly", () => {
   });
 
   it("Validates a simple ruleset", () => {
-    expect(RuleEngine.validate(simpleValidJson).isValid).toEqual(true);
+    expect(RulePilot.validate(simpleValidJson).isValid).toEqual(true);
   });
 
   it("Evaluates a simple ruleset", () => {
     expect(
-      RuleEngine.evaluate(simpleValidJson, { ProfitPercentage: 20 })
+      RulePilot.evaluate(simpleValidJson, { ProfitPercentage: 20 })
     ).toEqual(true);
     expect(
-      RuleEngine.evaluate(simpleValidJson, { ProfitPercentage: 2 })
+      RulePilot.evaluate(simpleValidJson, { ProfitPercentage: 2 })
     ).toEqual(false);
     expect(
-      RuleEngine.evaluate(simpleValidJson, {
+      RulePilot.evaluate(simpleValidJson, {
         WinRate: 80,
         AverageTradeDuration: 5,
         Duration: 9000000,
       })
     ).toEqual(false);
     expect(
-      RuleEngine.evaluate(simpleValidJson, {
+      RulePilot.evaluate(simpleValidJson, {
         WinRate: 80,
         AverageTradeDuration: 5,
         Duration: 9000000,
@@ -91,36 +91,36 @@ describe("The RuleEngine correctly", () => {
   });
 
   it("Throws an error on invalid not runnable ruleset", () => {
-    expect(() => RuleEngine.evaluate(simpleInValidJson, {})).toThrow(Error);
+    expect(() => RulePilot.evaluate(simpleInValidJson, {})).toThrow(Error);
   });
 
   it("Evaluates an invalid but runnable ruleset if marked as trusted", () => {
-    expect(RuleEngine.evaluate(nestedInValidJson, {}, true)).toEqual(2);
+    expect(RulePilot.evaluate(nestedInValidJson, {}, true)).toEqual(2);
   });
 
   it("Validates a nested ruleset", () => {
-    expect(RuleEngine.validate(nestedValidJson).isValid).toEqual(true);
+    expect(RulePilot.validate(nestedValidJson).isValid).toEqual(true);
   });
 
   it("Evaluates a nested ruleset", () => {
-    expect(RuleEngine.evaluate(nestedValidJson, {})).toEqual(2);
+    expect(RulePilot.evaluate(nestedValidJson, {})).toEqual(2);
     expect(
-      RuleEngine.evaluate(nestedValidJson, { Category: "Islamic" })
+      RulePilot.evaluate(nestedValidJson, { Category: "Islamic" })
     ).toEqual(4);
     expect(
-      RuleEngine.evaluate(nestedValidJson, { Monetization: "Real" })
+      RulePilot.evaluate(nestedValidJson, { Monetization: "Real" })
     ).toEqual(2);
-    expect(RuleEngine.evaluate(nestedValidJson, { Leverage: 1000 })).toEqual(3);
-    expect(RuleEngine.evaluate(nestedValidJson, { Leverage: 999 })).toEqual(2);
+    expect(RulePilot.evaluate(nestedValidJson, { Leverage: 1000 })).toEqual(3);
+    expect(RulePilot.evaluate(nestedValidJson, { Leverage: 999 })).toEqual(2);
     expect(
-      RuleEngine.evaluate(nestedValidJson, {
+      RulePilot.evaluate(nestedValidJson, {
         Monetization: "Real",
         Leverage: 150,
         CountryIso: "FI",
       })
     ).toEqual(3);
     expect(
-      RuleEngine.evaluate(nestedValidJson, {
+      RulePilot.evaluate(nestedValidJson, {
         Monetization: "Real",
         Leverage: 150,
         CountryIso: "FI",
@@ -131,12 +131,12 @@ describe("The RuleEngine correctly", () => {
   });
 
   it("Validates a simple ruleset with redundant condition", () => {
-    expect(RuleEngine.validate(simpleValidTwoJson).isValid).toEqual(true);
+    expect(RulePilot.validate(simpleValidTwoJson).isValid).toEqual(true);
   });
 
   it("Evaluates a simple ruleset with none type condition", () => {
     expect(
-      RuleEngine.evaluate(simpleValidTwoJson, {
+      RulePilot.evaluate(simpleValidTwoJson, {
         Leverage: 100,
         WinRate: 80,
         AverageTradeDuration: 5,
@@ -146,7 +146,7 @@ describe("The RuleEngine correctly", () => {
     ).toEqual(true);
 
     expect(
-      RuleEngine.evaluate(simpleValidTwoJson, {
+      RulePilot.evaluate(simpleValidTwoJson, {
         AverageTradeDuration: 10,
         Foo: 10,
       })

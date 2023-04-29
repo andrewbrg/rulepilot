@@ -1,4 +1,4 @@
-# JSON Rule Engine
+# RulePilot
 
 ## Overview
 
@@ -6,7 +6,7 @@
 | -----------|-----------|-------|
 | ![Statements](https://img.shields.io/badge/Coverage-95.76%25-brightgreen.svg "Make me better!") | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Lines](https://img.shields.io/badge/Coverage-95.72%25-brightgreen.svg "Make me better!") |
 
-`json-rule-engine` is a fast and lightweight rule engine for JavaScript. It is designed to be simple to use and easy to
+`rulepilot` is a fast and lightweight rule engine for JavaScript. It is designed to be simple to use and easy to
 integrate into your application.
 
 The rule engine evaluates human-readable JSON rules against a set of criteria. The rules are evaluated in a top-down
@@ -32,23 +32,23 @@ can evaluate to a `boolean`, `number`, `string` or other value.
 ### Installation
 
 ```bash
-npm install json-rule-engine
+npm install rulepilot
 ```
 
 ```bash
-yarn add json-rule-engine
+yarn add rulepilot
 ```
 
 ### Importing
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 ```
 
 For TypeScript users, you can import the `Rule` interface to get type definitions for the rule JSON.
 
 ```typescript
-import { RuleEngine, Rule } from 'json-rule-engine';
+import { RulePilot, Rule } from 'rulepilot';
 
 const rule: Rule = {
     // ...
@@ -64,7 +64,7 @@ For the discount to be applied, the user must be from either the `UK or Finland`
 price must be greater than or equal to `120.00`.
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 
 // Define a ruleset which caters for your needs
 const rule = {
@@ -101,7 +101,7 @@ const criteria = {
  * 
  * The result will be true
  */
-let result = RuleEngine.evaluate(rule, criteria);
+let result = RulePilot.evaluate(rule, criteria);
 
 // However, if any of the criteria do not pass the check, the result will be false
 criteria.totalCheckoutPrice = 25.50
@@ -109,7 +109,7 @@ criteria.totalCheckoutPrice = 25.50
 /**
  * The result will be false
  */
-result = RuleEngine.evaluate(rule, criteria);
+result = RulePilot.evaluate(rule, criteria);
 ```
 
 We can add additional requirements to the ruleset, for example apart from the above-mentioned conditions, we can also 
@@ -118,7 +118,7 @@ require that the user is either `over 18` years old or `has a valid student card
 Take note of how the `conditions` property is now an array of objects.
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 
 // Define a ruleset which caters for your needs
 const rule = {
@@ -169,13 +169,13 @@ const criteria = {
 /**
  * The result will be false
  */
-let result = RuleEngine.evaluate(rule, criteria);
+let result = RulePilot.evaluate(rule, criteria);
 
 /**
  * The result will be true
  */
 criteria.hasStudentCard = true;
-result = RuleEngine.evaluate(rule, criteria);
+result = RulePilot.evaluate(rule, criteria);
 ```
 
 If we want to add additional requirements to the ruleset, we can do so by adding another `any` or `all` condition. 
@@ -394,7 +394,7 @@ const rule = {
 In such a setup the result of our evaluation will be the value of the `result` property in condition which was met first.
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 
 // Define the criteria which will be evaluated against the ruleset
 const criteria = {
@@ -406,7 +406,7 @@ const criteria = {
 /**
  * The result will be 5
  */
-let result = RuleEngine.evaluate(rule, criteria);
+let result = RulePilot.evaluate(rule, criteria);
 
 criteria.country = "SE";
 criteria.city = "Linköping";
@@ -414,7 +414,7 @@ criteria.city = "Linköping";
 /**
  * The result will be 10
  */
-result = RuleEngine.evaluate(rule, criteria);
+result = RulePilot.evaluate(rule, criteria);
 
 criteria.country = "IT";
 criteria.age = 17;
@@ -423,7 +423,7 @@ criteria.hasStudentCard = false;
 /**
  * The result will be false
  */
-result = RuleEngine.evaluate(rule, criteria);
+result = RulePilot.evaluate(rule, criteria);
 ```
 
 **Important** When using granular rules, the order of rules matters. The first rule which is met will be the one which 
@@ -434,7 +434,7 @@ is used to calculate the discount.
 In granular rules, it is possible to set a default value which will be used if no conditions are met.
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 
 const rule = {
     "conditions": [{
@@ -446,7 +446,7 @@ const rule = {
 /**
  * The result will be 2.4
  */
-let result = RuleEngine.evaluate(rule, {});
+let result = RulePilot.evaluate(rule, {});
 ```
 
 In such a setup as seen above, if no conditions are met, the result will be `2.4`.
@@ -460,34 +460,46 @@ The `validate()` method will return `true` if the ruleset is valid, otherwise it
 describing the problem along with the problem node from the rule for easy debugging.
 
 ```typescript
-import { RuleEngine } from 'json-rule-engine';
+import { RulePilot } from 'rulepilot';
 
 const rule = {
     // ...
 }
 
-const result = RuleEngine.validate(rule);
+const result = RulePilot.validate(rule);
 ```
 
 For TypeScript users, the `ValidationResult` interface can be imported.
 
 ```typescript
-import { RuleEngine, Rule, ValidationResult } from 'json-rule-engine';
+import { RulePilot, Rule, ValidationResult } from 'rulepilot';
 
 const rule: Rule = {
     // ...
 }
 
-const validationResult: ValidationResult = RuleEngine.validate(rule);
+const validationResult: ValidationResult = RulePilot.validate(rule);
 ```
 
-## Building Distribution
+## Building RulePilot Distribution
+
+The distribution can be built with the following commands:
+
+```bash
+npm run build
+```
 
 ```bash
 yarn build
 ```
 
 ## Running Tests
+
+Tests are written in Jest and can be run with the following commands:
+
+```bash
+npm run jest --testPathPattern=test --detectOpenHandles --color --forceExit
+```
 
 ```bash
 yarn jest --testPathPattern=test --detectOpenHandles --color --forceExit
