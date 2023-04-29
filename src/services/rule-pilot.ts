@@ -11,18 +11,14 @@ export class RulePilot {
    *
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
-   * @param trustRuleset Set to true to avoid validating the ruleset before evaluating it.
+   * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
    * @throws Error if the rule is invalid.
    */
-  public static evaluate(
-    rule: Rule,
-    criteria: object,
-    trustRuleset = false
-  ): any {
+  static evaluate(rule: Rule, criteria: object, trustRule = false): any {
     // Before we evaluate the rule, we should validate it.
     // However, if `trustRuleset` is set to true, we will skip validation.
-    const validationResult = !trustRuleset && RulePilot.validate(rule);
-    if (!trustRuleset && !validationResult.isValid) {
+    const validationResult = !trustRule && RulePilot.validate(rule);
+    if (!trustRule && !validationResult.isValid) {
       throw new Error(JSON.stringify(validationResult.error));
     }
 
@@ -38,7 +34,7 @@ export class RulePilot {
    *
    * @param rule The rule to validate.
    */
-  public static validate(rule: Rule): ValidationResult {
+  static validate(rule: Rule): ValidationResult {
     return RulePilot.validator.validate(rule);
   }
 }

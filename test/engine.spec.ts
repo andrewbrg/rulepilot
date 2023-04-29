@@ -7,7 +7,7 @@ import { simpleInValidJson } from "./rulesets/simple-invalid.json";
 import { nestedValidJson } from "./rulesets/nested-valid.json";
 import { nestedInValidJson } from "./rulesets/nested-invalid.json";
 
-describe("RulePilot correctly", () => {
+describe("RulePilot engine correctly", () => {
   it("Validates a good ruleset", () => {
     expect(
       RulePilot.validate({

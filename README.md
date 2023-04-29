@@ -1,4 +1,6 @@
-# RulePilot
+<img src=".github/logo.png" width="180" />
+
+####
 
 | Statements | Functions | Lines |
 | -----------|-----------|-------|
@@ -7,7 +9,7 @@
 
 ## Overview
 
-`rulepilot` is a fast and lightweight rule engine for JavaScript. It is designed to be simple to use and easy to
+`RulePilot` is a fast and lightweight rule engine for JavaScript. It is designed to be simple to use and easy to
 integrate into your application.
 
 The rule engine evaluates human-readable JSON rules against a set of criteria. The rules are evaluated in a top-down

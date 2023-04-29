@@ -7,10 +7,10 @@
   "scripts": {
     "badges": "jest-badges-readme",
     "test": "jest --testPathPattern=test --detectOpenHandles --color --forceExit",
-    "build": "tsc src/index.ts --outDir dist --module commonjs --target es6 --lib es6 --declaration --declarationMap --sourceMap --esModuleInterop --resolveJsonModule --skipLibCheck --pretty",
+    "build": "rm -rf dist && tsc",
     "prettier": "prettier --write ."
   },
-  "repository": "https://github.com/andrewbrg/json-rule-engine.git",
+  "repository": "https://github.com/andrewbrg/rulepilot.git",
   "author": "Andrew Borg <andrew.borg@redacreltd.com>",
   "license": "MIT",
   "devDependencies": {
