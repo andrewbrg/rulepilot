@@ -1,10 +1,11 @@
 # RulePilot
 
-## Overview
-
 | Statements | Functions | Lines |
 | -----------|-----------|-------|
 | ![Statements](https://img.shields.io/badge/Coverage-95.76%25-brightgreen.svg "Make me better!") | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Lines](https://img.shields.io/badge/Coverage-95.72%25-brightgreen.svg "Make me better!") |
+
+
+## Overview
 
 `rulepilot` is a fast and lightweight rule engine for JavaScript. It is designed to be simple to use and easy to
 integrate into your application.
