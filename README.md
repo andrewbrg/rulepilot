@@ -430,7 +430,17 @@ result = RulePilot.evaluate(rule, criteria);
 **Important** When using granular rules, the order of rules matters. The first rule which is met will be the one which 
 is used to calculate the discount.
 
-#### Setting Defaults
+#### Condition Types
+
+There are three (3) types of conditions which can be used in a rule:
+
+ - `all` - All conditions must be met
+ - `any` - Any condition must be met
+ - `none` - No conditions must be met
+
+Each and all of these condition types can be mixed and matched or nested to create complex rules.
+
+#### Defaulting A Rule Result
 
 In granular rules, it is possible to set a default value which will be used if no conditions are met.
 
