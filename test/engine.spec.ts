@@ -88,6 +88,33 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(false);
   });
 
+  it("Handles array of criteria properly", () => {
+    expect(
+      RulePilot.evaluate(
+        {
+          conditions: [
+            {
+              all: [{ field: "foo.bar", operator: "==", value: "bar" }],
+            },
+          ],
+        },
+        [
+          {
+            foo: {
+              bar: "test",
+            },
+          },
+          {
+            foo: {
+              bar: "bar",
+            },
+          },
+          {},
+        ]
+      )
+    ).toEqual([false, true, false]);
+  });
+
   it("Throws an error on invalid not runnable ruleset", () => {
     expect(() => RulePilot.evaluate({ conditions: [] }, {})).toThrow(Error);
   });

@@ -18,13 +18,20 @@ export class RulePilot {
   }
   /**
    * Evaluates a rule against a set of criteria and returns the result.
+   * If the criteria is an array (indicating multiple criteria to test),
+   * the rule will be evaluated against each item in the array and
+   * an array of results will be returned.
    *
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
    * @throws Error if the rule is invalid.
    */
-  static evaluate(rule: Rule, criteria: object, trustRule = false): any {
+  static evaluate(
+    rule: Rule,
+    criteria: object | object[],
+    trustRule = false
+  ): any {
     // Before we evaluate the rule, we should validate it.
     // However, if `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRule && RulePilot.validate(rule);

@@ -60,7 +60,7 @@ For TypeScript users, you can import the `Rule` interface to get type definition
 import { RulePilot, Rule } from 'rulepilot';
 
 const rule: Rule = {
-    // ...
+  // ...
 }
 ```
 
@@ -77,32 +77,32 @@ import { RulePilot, Rule } from 'rulepilot';
 
 // Define a rule which caters for your needs
 const rule: Rule = {
-    "conditions": {
-        "all": [
-            {
-                "field": "country",
-                "operator": "in",
-                "value": ["GB", "FI"]
-            },
-            {
-                "field": "hasCoupon",
-                "operator": "==",
-                "value": true
-            },
-            {
-                "field": "totalCheckoutPrice",
-                "operator": ">=",
-                "value": 120.00
-            }
-        ] 
-    }
+  "conditions": {
+    "all": [
+      {
+        "field": "country",
+        "operator": "in",
+        "value": ["GB", "FI"]
+      },
+      {
+        "field": "hasCoupon",
+        "operator": "==",
+        "value": true
+      },
+      {
+        "field": "totalCheckoutPrice",
+        "operator": ">=",
+        "value": 120.00
+      }
+    ]
+  }
 }
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
-    country: "GB",
-    totalCheckoutPrice: 125.00,
-    hasCoupon: true,
+  country: "GB",
+  totalCheckoutPrice: 125.00,
+  hasCoupon: true,
 }
 
 /**
@@ -131,48 +131,48 @@ import { RulePilot, Rule } from 'rulepilot';
 
 // Define a rule which caters for your needs
 const rule: Rule = {
-    "conditions": [
+  "conditions": [
+    {
+      "all": [
         {
-            "all": [
-                {
-                    "field": "country",
-                    "operator": "in",
-                    "value": ["GB", "FI"]
-                },
-                {
-                    "field": "hasCoupon",
-                    "operator": "==",
-                    "value": true
-                },
-                {
-                    "field": "totalCheckoutPrice",
-                    "operator": ">=",
-                    "value": 120.00
-                }
-            ]
+          "field": "country",
+          "operator": "in",
+          "value": ["GB", "FI"]
         },
         {
-            "any": [
-                {
-                    "field": "age",
-                    "operator": ">=",
-                    "value": 18
-                },
-                {
-                    "field": "hasStudentCard",
-                    "operator": "==",
-                    "value": true
-                }
-            ]
+          "field": "hasCoupon",
+          "operator": "==",
+          "value": true
+        },
+        {
+          "field": "totalCheckoutPrice",
+          "operator": ">=",
+          "value": 120.00
         }
-    ]
+      ]
+    },
+    {
+      "any": [
+        {
+          "field": "age",
+          "operator": ">=",
+          "value": 18
+        },
+        {
+          "field": "hasStudentCard",
+          "operator": "==",
+          "value": true
+        }
+      ]
+    }
+  ]
 }
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
-    country: "GB",
-    totalCheckoutPrice: 20.00,
-    hasCoupon: true,
+  country: "GB",
+  totalCheckoutPrice: 20.00,
+  hasCoupon: true,
 }
 
 /**
@@ -194,49 +194,50 @@ For example, we can add a requirement that a discount will also be given to all 
 
 ```typescript
 const rule: Rule = {
-    "conditions": [
+  "conditions": [
+    {
+      "any": [
         {
-            "any": [
-                {
-                    "all": [{
-                        "field": "country",
-                        "operator": "in",
-                        "value": ["GB", "FI"]
-                    },
-                    {
-                        "field": "hasCoupon",
-                        "operator": "==",
-                        "value": true
-                    },
-                    {
-                        "field": "totalCheckoutPrice",
-                        "operator": ">=",
-                        "value": 120.00
-                    }
-                ]
+          "all": [{
+            "field": "country",
+            "operator": "in",
+            "value": ["GB", "FI"]
+          },
+            {
+              "field": "hasCoupon",
+              "operator": "==",
+              "value": true
             },
             {
-                "field": "country",
-                "operator": "==",
-                "value": "SE"
+              "field": "totalCheckoutPrice",
+              "operator": ">=",
+              "value": 120.00
             }
-        ]
+          ]
+        },
+        {
+          "field": "country",
+          "operator": "==",
+          "value": "SE"
+        }
+      ]
     },
     {
-        "any": [
-            {
-                "field": "age",
-                "operator": ">=",
-                "value": 18
-            },
-            {
-                "field": "hasStudentCard",
-                "operator": "==",
-                "value": true
-            }
-        ]
+      "any": [
+        {
+          "field": "age",
+          "operator": ">=",
+          "value": 18
+        },
+        {
+          "field": "hasStudentCard",
+          "operator": "==",
+          "value": true
+        }
+      ]
     }
-]}
+  ]
+};
 ```
 
 The criteria can be narrowed down further by specifying `Swedish` users cannot be from `Stockholm` or `Gothenburg` 
@@ -244,76 +245,77 @@ otherwise they must spend `more than 200.00` at checkout.
 
 ```typescript
 const rule: Rule = {
-    "conditions": [{
-        "any": [
-            {
-                "all": [
-                    {
-                        "field": "country",
-                        "operator": "in",
-                        "value": ["GB", "FI"]
-                    },
-                    {
-                        "field": "hasCoupon",
-                        "operator": "==",
-                        "value": true
-                    },
-                    {
-                        "field": "totalCheckoutPrice",
-                        "operator": ">=",
-                        "value": 120.00
-                    }
-                ]
-            },
-            {
-                "any": [
-                    {
-                        "all": [
-                            {
-                                "field": "country",
-                                "operator": "==",
-                                "value": "SE"
-                            },
-                            {
-                                "field": "city",
-                                "operator": "not in",
-                                "value": ["Stockholm", "Gothenburg"]
-                            }
-                        ]
-                    },
-                    {
-                        "all": [
-                            {
-                                "field": "country",
-                                "operator": "==",
-                                "value": "SE"
-                            },
-                            {
-                                "field": "city",
-                                "operator": "totalCheckoutPrice",
-                                "value": 200.00
-                            }
-                        ]
-                    }
-                ]
-            }
+  "conditions": [{
+    "any": [
+      {
+        "all": [
+          {
+            "field": "country",
+            "operator": "in",
+            "value": ["GB", "FI"]
+          },
+          {
+            "field": "hasCoupon",
+            "operator": "==",
+            "value": true
+          },
+          {
+            "field": "totalCheckoutPrice",
+            "operator": ">=",
+            "value": 120.00
+          }
         ]
-    },
-    {
+      },
+      {
         "any": [
-            {
-                "field": "age",
-                "operator": ">=",
-                "value": 18
-            },
-            {
-                "field": "hasStudentCard",
+          {
+            "all": [
+              {
+                "field": "country",
                 "operator": "==",
-                "value": true
-            }
+                "value": "SE"
+              },
+              {
+                "field": "city",
+                "operator": "not in",
+                "value": ["Stockholm", "Gothenburg"]
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "field": "country",
+                "operator": "==",
+                "value": "SE"
+              },
+              {
+                "field": "city",
+                "operator": "totalCheckoutPrice",
+                "value": 200.00
+              }
+            ]
+          }
         ]
+      }
+    ]
+  },
+    {
+      "any": [
+        {
+          "field": "age",
+          "operator": ">=",
+          "value": 18
+        },
+        {
+          "field": "hasStudentCard",
+          "operator": "==",
+          "value": true
+        }
+      ]
     }
-]}
+  ]
+};
 ```
 
 ### Granular Example
@@ -326,78 +328,79 @@ To accomplish this, we can assign a `result` to each condition which will be use
 
 ```typescript
 const rule: Rule = {
-    "conditions": [{
+  "conditions": [{
+    "any": [
+      {
+        "all": [
+          {
+            "field": "country",
+            "operator": "in",
+            "value": ["GB", "FI"]
+          },
+          {
+            "field": "hasCoupon",
+            "operator": "==",
+            "value": true
+          },
+          {
+            "field": "totalCheckoutPrice",
+            "operator": ">=",
+            "value": 120.00
+          }
+        ]
+      },
+      {
         "any": [
-            {
-                "all": [
-                    {
-                        "field": "country",
-                        "operator": "in",
-                        "value": ["GB", "FI"]
-                    },
-                    {
-                        "field": "hasCoupon",
-                        "operator": "==",
-                        "value": true
-                    },
-                    {
-                        "field": "totalCheckoutPrice",
-                        "operator": ">=",
-                        "value": 120.00
-                    }
-                ]
-            },
-            {
-                "any": [
-                    {
-                        "all": [
-                            {
-                                "field": "country",
-                                "operator": "==",
-                                "value": "SE"
-                            },
-                            {
-                                "field": "city",
-                                "operator": "not in",
-                                "value": ["Stockholm", "Gothenburg"]
-                            }
-                        ]
-                    },
-                    {
-                        "all": [
-                            {
-                                "field": "country",
-                                "operator": "==",
-                                "value": "SE"
-                            },
-                            {
-                                "field": "city",
-                                "operator": "totalCheckoutPrice",
-                                "value": 200.00
-                            }
-                        ]
-                    }
-                ]
-            }
-        ],
-        "result": 5
-    },
-    {
-        "any": [
-            {
-                "field": "age",
-                "operator": ">=",
-                "value": 18
-            },
-            {
-                "field": "hasStudentCard",
+          {
+            "all": [
+              {
+                "field": "country",
                 "operator": "==",
-                "value": true
-            }
-        ],
-        "result": 10
+                "value": "SE"
+              },
+              {
+                "field": "city",
+                "operator": "not in",
+                "value": ["Stockholm", "Gothenburg"]
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "field": "country",
+                "operator": "==",
+                "value": "SE"
+              },
+              {
+                "field": "city",
+                "operator": "totalCheckoutPrice",
+                "value": 200.00
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "result": 5
+  },
+    {
+      "any": [
+        {
+          "field": "age",
+          "operator": ">=",
+          "value": 18
+        },
+        {
+          "field": "hasStudentCard",
+          "operator": "==",
+          "value": true
+        }
+      ],
+      "result": 10
     }
-]}
+  ]
+};
 ```
 
 In such a setup the result of our evaluation will be the value of the `result` property in condition which was met first.
@@ -407,10 +410,10 @@ import { RulePilot } from 'rulepilot';
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
-    country: "GB",
-    totalCheckoutPrice: 340.22,
-    hasCoupon: true,
-}
+  country: "GB",
+  totalCheckoutPrice: 340.22,
+  hasCoupon: true,
+};
 
 /**
  * The result will be 5
@@ -447,10 +450,10 @@ In granular rules, it is possible to set a default value which will be used if n
 import { RulePilot, Rule } from 'rulepilot';
 
 const rule: Rule = {
-    "conditions": [{
-        // ..
-    }],
-    "default": 2.5
+  "conditions": [{
+    // ..
+  }],
+  "default": 2.5
 };
 
 /**
@@ -484,21 +487,56 @@ To do so, we can use the `.` (dot) notation to access nested properties in the c
 import { RulePilot, Rule } from 'rulepilot';
 
 const rule: Rule = {
-    "conditions": [{
-        "field": "profile.age",
-        "operator": ">=",
-        "value": 18
-    }]
+  "conditions": [{
+    "field": "profile.age",
+    "operator": ">=",
+    "value": 18
+  }]
 };
 
 const criteria = {
-    profile: {
-        age: 20
-    }
+  profile: {
+    age: 20
+  }
 };
 
 /**
  * The result will be true
+ */
+let result = RulePilot.evaluate(rule, criteria);
+```
+
+### Evaluating Multiple Criteria At Once
+
+Multiple criteria can be evaluated against a rule at once by passing an array of criteria to the `evaluate()` method.
+
+```typescript
+import { RulePilot, Rule } from 'rulepilot';
+
+const rule: Rule = {
+  "conditions": {
+    "any":{
+      "field": "profile.age",
+      "operator": ">=",
+      "value": 18
+    }}
+};
+
+const criteria = [
+  {
+    profile: {
+      age: 20
+    }
+  },
+  {
+    profile: {
+      age: 17
+    }
+  }
+];
+
+/**
+ * The result will be [true, false]
  */
 let result = RulePilot.evaluate(rule, criteria);
 ```
