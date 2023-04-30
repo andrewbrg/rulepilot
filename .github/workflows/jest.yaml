@@ -1,4 +1,4 @@
-name: 'coverage'
+name: Run Tests
 on:
   pull_request:
     branches:
