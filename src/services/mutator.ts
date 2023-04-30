@@ -9,7 +9,7 @@ export class Mutator {
   private _mutations: Map<string, Function> = new Map();
 
   /**
-   * Adds a mutation to the mutator.
+   * Adds a mutation to the mutator instance.
    * @param name The name of the mutation.
    * @param mutation The mutation function.
    */
@@ -19,7 +19,7 @@ export class Mutator {
 
   /**
    * Mutates and returns a criteria object.
-   * @param criteria
+   * @param criteria The criteria to mutate.
    */
   async mutate(criteria: object | object[]): Promise<object | object[]> {
     // Cater for the case where the criteria is an array.
@@ -49,9 +49,12 @@ export class Mutator {
   /**
    * Checks if the criteria contains any mutate-able properties.
    * @param criteria The criteria to check.
-   * @param result Whether or not a mutate-able property has been found.
+   * @param result Whether a mutate-able property has been found.
    */
   private hasMutations(criteria: object, result: boolean = false): boolean {
+    // If we have already found a mut
+    if (result) return true;
+
     for (const key of Object.keys(criteria)) {
       // If we have already found a mutation, we can stop.
       if (result) return true;
@@ -86,11 +89,11 @@ export class Mutator {
   /**
    * Executes a mutation.
    * Defers duplicate executions to the same object from a memory cache.
-   * @param key The key of the mutation to execute.
+   * @param mutationKey The key of the mutation to execute.
    * @param param The parameter to pass to the mutation function.
    */
-  private async execCached(key: string, param: unknown): Promise<void> {
-    const cacheKey = `${key}${createHash("md5")
+  private async execCached(mutationKey: string, param: unknown): Promise<void> {
+    const cacheKey = `${mutationKey}${createHash("md5")
       .update(param.toString())
       .digest("hex")}`;
 
@@ -113,7 +116,7 @@ export class Mutator {
     this._buffer.set(cacheKey, true);
 
     // Execute the mutation
-    const mutation = this._mutations.get(key);
+    const mutation = this._mutations.get(mutationKey);
     const result = await mutation(param);
 
     // Cache the result and set the buffer to false.

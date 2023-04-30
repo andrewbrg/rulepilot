@@ -22,8 +22,7 @@ export class RulePilot {
   }
 
   /**
-   * Adds a mutation.
-   *
+   * Adds a mutation to the rule pilot instance.
    * Mutations allow for the modification of the criteria before
    * it is evaluated against a rule.
    *
@@ -45,7 +44,11 @@ export class RulePilot {
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
    * @throws Error if the rule is invalid.
    */
-  evaluate<T>(rule: Rule, criteria: object | object[], trustRule = false): T {
+  async evaluate<T>(
+    rule: Rule,
+    criteria: object | object[],
+    trustRule = false
+  ): Promise<T> {
     // Before we evaluate the rule, we should validate it.
     // However, if `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRule && this.validate(rule);
@@ -53,7 +56,7 @@ export class RulePilot {
       throw new RuleError(validationResult);
     }
 
-    return this._evaluator.evaluate(rule, criteria);
+    return this._evaluator.evaluate(rule, await this._mutator.mutate(criteria));
   }
 
   /**
@@ -88,11 +91,11 @@ export class RulePilot {
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
    * @throws Error if the rule is invalid.
    */
-  static evaluate<T>(
+  static async evaluate<T>(
     rule: Rule,
     criteria: object | object[],
     trustRule = false
-  ): T {
+  ): Promise<T> {
     return RulePilot._rulePilot.evaluate<T>(rule, criteria, trustRule);
   }
 
