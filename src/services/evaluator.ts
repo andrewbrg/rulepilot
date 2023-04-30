@@ -77,13 +77,16 @@ export class Evaluator {
    * @param criteria The criteria to evaluate the constraint with.
    */
   private checkConstraint(constraint: Constraint, criteria: object): boolean {
+    // If the value contains '.' we should assume it is a nested property
+    const criterion = constraint.field.includes(".")
+      ? this.resolveNestedProperty(constraint.field, criteria)
+      : criteria[constraint.field];
+
     // If the criteria object does not have the field
     // we are looking for, we should return false.
-    if (!criteria.hasOwnProperty(constraint.field)) {
+    if (!criterion) {
       return false;
     }
-
-    const criterion = criteria[constraint.field];
 
     switch (constraint.operator) {
       case "==":
@@ -111,5 +114,10 @@ export class Evaluator {
       default:
         return false;
     }
+  }
+
+  private resolveNestedProperty(path, obj): any {
+    let properties = Array.isArray(path) ? path : path.split(".");
+    return properties.reduce((prev, curr) => prev?.[curr], obj);
   }
 }

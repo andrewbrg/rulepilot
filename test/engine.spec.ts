@@ -50,6 +50,44 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(false);
   });
 
+  it("Resolves nested field definitions", () => {
+    expect(
+      RulePilot.evaluate(
+        {
+          conditions: [
+            {
+              all: [{ field: "foo.bar", operator: "==", value: "test" }],
+            },
+          ],
+        },
+        {
+          foo: {
+            bar: "test",
+          },
+        }
+      )
+    ).toEqual(true);
+  });
+
+  it("Handles missing nested field definitions", () => {
+    expect(
+      RulePilot.evaluate(
+        {
+          conditions: [
+            {
+              all: [{ field: "foo.foo", operator: "==", value: "test" }],
+            },
+          ],
+        },
+        {
+          foo: {
+            bar: "test",
+          },
+        }
+      )
+    ).toEqual(false);
+  });
+
   it("Throws an error on invalid not runnable ruleset", () => {
     expect(() => RulePilot.evaluate({ conditions: [] }, {})).toThrow(Error);
   });

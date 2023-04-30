@@ -469,6 +469,37 @@ let result = RulePilot.evaluate(rule, {});
 
 In such a setup as seen above, if no conditions are met, the result will be `2.4`.
 
+### Criteria With Nested Properties
+
+In some cases, the criteria which is used to evaluate a rule might be more complex objects with nested properties. 
+
+For example, we might want to evaluate a rule against a `User` object which has a `profile` property which contains
+the user's profile information.
+
+To do so, we can use the `.` (dot) notation to access nested properties in the criteria.
+
+```typescript
+import { RulePilot, Rule } from 'rulepilot';
+
+const rule: Rule = {
+    "conditions": [{
+        "field": "profile.age",
+        "operator": ">=",
+        "value": 18
+    }]
+};
+
+const criteria = {
+    profile: {
+        age: 20
+    }
+};
+
+/**
+ * The result will be true
+ */
+let result = RulePilot.evaluate(rule, criteria);
+```
 
 ## Validating A Rule
 
