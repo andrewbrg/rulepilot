@@ -535,39 +535,38 @@ const validationResult: ValidationResult = RulePilot.validate(rule);
 Although creating rules in plain JSON is very straightforward, `RulePilot` comes with a `Builder` class which can be 
 used to create rules in a fluent manner.
 
-The `add()` method allows for the addition of a root node to the rule. This new node can be a condition or a constraint 
-and can be then setup as required.
+The `add()` method allows for the addition of a root condition to the rule. This condition can be then setup as required.
 
 The `default()` method allows for the addition of a default value result for the rule.
 
 ```typescript
 import { RulePilot, Rule } from 'rulepilot';
 
-const builder = RulePilot.builder();
+const b = RulePilot.builder();
 
-const rule: Rule = builder
+const rule: Rule = b
   .add(
-    builder.condition(
+    b.condition(
       "all",
       [
-        builder.condition("any", [
-          builder.constraint("fieldA", "==", "bar"),
-          builder.constraint("fieldB", ">=", 2),
+        b.condition("any", [
+          b.constraint("fieldA", "==", "bar"),
+          b.constraint("fieldB", ">=", 2),
         ]),
-        builder.constraint("fieldC", "not in", [1, 2, 3]),
+        b.constraint("fieldC", "not in", [1, 2, 3]),
       ],
       3
     )
   )
-  .add(builder.condition("none", [], 5))
-  .add(builder.condition("any", [builder.constraint("fieldA", "==", "value")]))
+  .add(b.condition("none", [], 5))
+  .add(b.condition("any", [b.constraint("fieldA", "==", "value")]))
   .default(2)
   .build();
 ```
 
 ## Building The Library
 
-The distribution can be built with the following commands:
+The distribution can be built as follows, with the output being placed in a `dist` directory.
 
 ```bash
 npm run build
