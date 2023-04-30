@@ -116,6 +116,11 @@ export class Evaluator {
     }
   }
 
+  /**
+   * Resolves a nested property from a sting as an object path.
+   * @param path The path to resolve.
+   * @param obj The object to resolve the path against.
+   */
   private resolveNestedProperty(path, obj): any {
     let properties = Array.isArray(path) ? path : path.split(".");
     return properties.reduce((prev, curr) => prev?.[curr], obj);
