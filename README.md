@@ -2,9 +2,9 @@
 
 [![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot)
 
-| Statements | Functions | Lines |
-| -----------|-----------|-------|
-| ![Statements](https://img.shields.io/badge/Coverage-95.76%25-brightgreen.svg "Make me better!") | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Lines](https://img.shields.io/badge/Coverage-95.72%25-brightgreen.svg "Make me better!") |
+| Statements                                                                                    | Functions | Lines                                                                                    |
+|-----------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------------------------------------|
+| ![Statements](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Lines](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") |
 
 
 ## Overview

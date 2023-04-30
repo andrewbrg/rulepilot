@@ -37,6 +37,9 @@ export class Evaluator {
   private evaluateCondition(condition: Condition, criteria: object): boolean {
     // The condition must have an 'any' or 'all' property.
     const type = this._objectDiscovery.conditionType(condition);
+    if (!type) {
+      return false;
+    }
 
     // If the type is 'all' or 'none', we should set the initial
     // result to true, otherwise we should set it to false.
@@ -50,11 +53,6 @@ export class Evaluator {
       }
       if (this._objectDiscovery.isConstraint(node)) {
         fn = "checkConstraint";
-      }
-
-      // Do not process unrecognized items.
-      if (!fn) {
-        continue;
       }
 
       // Process the node

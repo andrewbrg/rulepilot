@@ -25,7 +25,10 @@ export class Validator {
       rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
 
     // Validate the 'conditions' property.
-    if (conditions.length === 0) {
+    if (
+      conditions.length === 0 ||
+      ("object" === typeof conditions[0] && !Object.keys(conditions[0]).length)
+    ) {
       return {
         isValid: false,
         error: {
@@ -66,16 +69,28 @@ export class Validator {
 
     // Validate each item in the condition.
     for (const node of condition[type]) {
-      if (this.objectDiscovery.isCondition(node)) {
+      const isCondition = this.objectDiscovery.isCondition(node);
+      if (isCondition) {
         const subResult = this.validateCondition(node as Condition, depth + 1);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
       }
 
-      if (this.objectDiscovery.isConstraint(node)) {
+      const isConstraint = this.objectDiscovery.isConstraint(node);
+      if (isConstraint) {
         const subResult = this.validateConstraint(node as Constraint);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
+      }
+
+      if (!isConstraint && !isCondition) {
+        return {
+          isValid: false,
+          error: {
+            message: "Each node should be a condition or constraint.",
+            element: node,
+          },
+        };
       }
 
       // Result is only valid on the root condition.
@@ -103,16 +118,6 @@ export class Validator {
    * @param constraint The constraint to validate.
    */
   private validateConstraint(constraint: Constraint): ValidationResult {
-    if (!this.objectDiscovery.isConstraint(constraint)) {
-      return {
-        isValid: false,
-        error: {
-          message: "Invalid constraint structure.",
-          element: constraint,
-        },
-      };
-    }
-
     if ("string" !== typeof constraint.field) {
       return {
         isValid: false,

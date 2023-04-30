@@ -1,6 +1,6 @@
 import { Rule } from "../../src";
 
-export const simpleValidTwoJson: Rule = {
+export const valid2Json: Rule = {
   conditions: {
     any: [
       {
@@ -45,9 +45,6 @@ export const simpleValidTwoJson: Rule = {
             value: [10, 11, 12],
           },
         ],
-      },
-      {
-        foo: [],
       },
     ],
   },

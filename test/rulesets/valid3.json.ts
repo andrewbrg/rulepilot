@@ -1,6 +1,6 @@
 import { Rule } from "../../src";
 
-export const nestedInValidJson: Rule = {
+export const valid3Json: Rule = {
   conditions: [
     {
       any: [
@@ -22,17 +22,11 @@ export const nestedInValidJson: Rule = {
               value: "Real",
             },
           ],
-          // Result property is only allowed on the top level conditions
-          result: "This is invalid!!!!!!!",
         },
         {
-          all: [
-            {
-              field: "Leverage",
-              operator: ">=",
-              value: 1000,
-            },
-          ],
+          field: "Leverage",
+          operator: ">=",
+          value: 1000,
         },
       ],
       result: 3,
