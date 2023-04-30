@@ -466,10 +466,10 @@ In such a setup as seen above, if no conditions are met, the result will be `2.5
 There are three (3) types of conditions which can be used in a rule:
 
  - `all` - All criteria in the condition must be met
- - `any` - Any criteria of the condition must be met
+ - `any` - Any criteria in the condition must be met
  - `none` - No criteria in the conditions must be met (none === !all)
 
-Each and all of these condition types can be mixed and matched or nested to create complex rules.
+Condition types can be mixed and matched or nested to create complex rules.
 
 ### Criteria With Nested Properties
 
