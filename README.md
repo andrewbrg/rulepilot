@@ -434,18 +434,9 @@ criteria.hasStudentCard = false;
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-**Important** When using granular rules, the order of rules matters. The first rule which is met will be the one which 
-is used to calculate the discount.
+**Important** When using granular rules, the order of conditions in the rule matters! 
 
-#### Condition Types
-
-There are three (3) types of conditions which can be used in a rule:
-
- - `all` - All conditions must be met
- - `any` - Any condition must be met
- - `none` - No conditions must be met
-
-Each and all of these condition types can be mixed and matched or nested to create complex rules.
+The first condition in the rule which is met will be the one which is used to calculate the discount.
 
 #### Defaulting A Rule Result
 
@@ -458,7 +449,7 @@ const rule: Rule = {
     "conditions": [{
         // ..
     }],
-    "default": 2.4
+    "default": 2.5
 };
 
 /**
@@ -467,7 +458,17 @@ const rule: Rule = {
 let result = RulePilot.evaluate(rule, {});
 ```
 
-In such a setup as seen above, if no conditions are met, the result will be `2.4`.
+In such a setup as seen above, if no conditions are met, the result will be `2.5`.
+
+#### Condition Types
+
+There are three (3) types of conditions which can be used in a rule:
+
+ - `all` - All conditions must be met
+ - `any` - Any condition must be met
+ - `none` - No conditions must be met
+
+Each and all of these condition types can be mixed and matched or nested to create complex rules.
 
 ### Criteria With Nested Properties
 
