@@ -100,7 +100,7 @@ const rule: Rule = {
 // Define the criteria which will be evaluated against the rule
 const criteria = {
     country: "GB",
-    totalCheckoutPrice: 340.22,
+    totalCheckoutPrice: 125.00,
     hasCoupon: true,
 }
 
@@ -112,7 +112,7 @@ const criteria = {
 let result = RulePilot.evaluate(rule, criteria);
 
 // However, if any of the criteria do not pass the check, the result will be false
-criteria.totalCheckoutPrice = 25.50
+criteria.totalCheckoutPrice = 25.00
 
 /**
  * The result will be false
@@ -170,7 +170,7 @@ const rule: Rule = {
 // Define the criteria which will be evaluated against the rule
 const criteria = {
     country: "GB",
-    totalCheckoutPrice: 340.22,
+    totalCheckoutPrice: 20.00,
     hasCoupon: true,
 }
 
