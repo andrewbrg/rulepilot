@@ -1,10 +1,10 @@
-<img src=".github/logo.png" width="180" alt="RulePilot" />
+<img src=".github/logo.png" width="190" alt="RulePilot" />
 
 [![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot)
 
-| Statements                                                                                    | Functions | Lines                                                                                    |
-|-----------------------------------------------------------------------------------------------|-----------|------------------------------------------------------------------------------------------|
-| ![Statements](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") | ![Lines](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg "Make me better!") |
+| Statements                                                                                  | Functions | Lines                                                                                   |
+|---------------------------------------------------------------------------------------------|-----------|-----------------------------------------------------------------------------------------|
+| ![Statements](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Lines](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) |
 
 
 ## Overview
@@ -13,8 +13,13 @@
 integrate into your application.
 
 The rule engine evaluates human-readable JSON rules against a set of criteria. The rules are evaluated in a top-down
-fashion. Rules can be written to evaluate to a `boolean` value or in a granular fashion, where each subset of the ruleset
-can evaluate to a `boolean`, `number`, `string` or other value.
+fashion. 
+
+Simple rules can be written to evaluate to a `boolean` value _(indicating whether the criteria tested passes the rule)_.
+
+Otherwise, granular rules can be created, where each condition of the rule can evaluate to a `boolean`, `number`, 
+`string`, `object` or `array`. This is particularly useful when you want to evaluate a rule and return a value based on
+the result of each condition's evaluation.
 
 
 ## Features
@@ -61,7 +66,7 @@ const rule: Rule = {
 
 ### Basic Example
 
-Here we are defining a ruleset which will evaluate to `true` or `false` based on the criteria provided. In this example, 
+Here we are defining a rule which will evaluate to `true` or `false` based on the criteria provided. In this example, 
 we are checking whether a user is allowed to benefit from a discount at checkout of not.
 
 For the discount to be applied, the user must be from either the `UK or Finland`, have a `coupon` and the total checkout 
@@ -70,7 +75,7 @@ price must be greater than or equal to `120.00`.
 ```typescript
 import { RulePilot, Rule } from 'rulepilot';
 
-// Define a ruleset which caters for your needs
+// Define a rule which caters for your needs
 const rule: Rule = {
     "conditions": {
         "all": [
@@ -93,7 +98,7 @@ const rule: Rule = {
     }
 }
 
-// Define the criteria which will be evaluated against the ruleset
+// Define the criteria which will be evaluated against the rule
 const criteria = {
     country: "GB",
     totalCheckoutPrice: 340.22,
@@ -101,7 +106,7 @@ const criteria = {
 }
 
 /**
- * Evaluate the criteria against the ruleset
+ * Evaluate the criteria against the rule
  * 
  * The result will be true
  */
@@ -116,7 +121,7 @@ criteria.totalCheckoutPrice = 25.50
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-We can add additional requirements to the ruleset, for example apart from the above-mentioned conditions, we can also 
+We can add additional requirements to the rule, for example apart from the above-mentioned conditions, we can also 
 require that the user is either `over 18` years old or `has a valid student card`.
 
 Take note of how the `conditions` property is now an array of objects.
@@ -124,7 +129,7 @@ Take note of how the `conditions` property is now an array of objects.
 ```typescript
 import { RulePilot, Rule } from 'rulepilot';
 
-// Define a ruleset which caters for your needs
+// Define a rule which caters for your needs
 const rule: Rule = {
     "conditions": [
         {
@@ -163,7 +168,7 @@ const rule: Rule = {
     ]
 }
 
-// Define the criteria which will be evaluated against the ruleset
+// Define the criteria which will be evaluated against the rule
 const criteria = {
     country: "GB",
     totalCheckoutPrice: 340.22,
@@ -182,7 +187,7 @@ criteria.hasStudentCard = true;
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-If we want to add additional requirements to the ruleset, we can do so by adding another `any` or `all` condition. 
+If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition. 
 
 For example, we can add a requirement that a discount will also be given to all users from Sweden as long as they are 
 18+ or have a valid student card _(irrelevant of any other conditions set)_.
@@ -400,7 +405,7 @@ In such a setup the result of our evaluation will be the value of the `result` p
 ```typescript
 import { RulePilot } from 'rulepilot';
 
-// Define the criteria which will be evaluated against the ruleset
+// Define the criteria which will be evaluated against the rule
 const criteria = {
     country: "GB",
     totalCheckoutPrice: 340.22,
@@ -470,7 +475,7 @@ In such a setup as seen above, if no conditions are met, the result will be `2.4
 
 of the rule to ensure it is valid and properly structured.
 
-The `validate()` method will return `true` if the ruleset is valid, otherwise it will return an error message 
+The `validate()` method will return `true` if the rule is valid, otherwise it will return an error message 
 describing the problem along with the problem node from the rule for easy debugging.
 
 ```typescript
