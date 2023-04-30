@@ -26,14 +26,15 @@ each condition's evaluation.
 - Simple to use
 - Written in TypeScript
 - Human-readable JSON rules
-- Fluent rule builder tool (ORM style)
-- Runs both in Node and in the browser
+- Runs in both Node & the browser
 - Lightweight with **zero dependencies** & Fast _(10,000 rule evaluations in ~35-40ms)_
+- Fluent rule builder tool (ORM style)
 - Both Simple & Granular rule evaluation
-- Infinite nesting of conditions in rules
+- Infinite condition nesting
+- Supports Criteria objects with nested properties
+- Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, and `NotIn` operators
-- Validation & debug tools for rules
 
 ## Usage
 
@@ -464,9 +465,9 @@ In such a setup as seen above, if no conditions are met, the result will be `2.5
 
 There are three (3) types of conditions which can be used in a rule:
 
- - `all` - All conditions must be met
- - `any` - Any condition must be met
- - `none` - No conditions must be met
+ - `all` - All criteria in the condition must be met
+ - `any` - Any criteria of the condition must be met
+ - `none` - No criteria in the conditions must be met (none === !all)
 
 Each and all of these condition types can be mixed and matched or nested to create complex rules.
 
