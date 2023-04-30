@@ -25,15 +25,15 @@ each condition's evaluation.
 
 - Simple to use
 - Written in TypeScript
-- Runs both in Node and in the browser
-- Lightweight andFast with no dependencies
-- Granular rule evaluation
 - Human-readable JSON rules
-- Infinite nesting of rule conditions
+- Fluent rule builder tool (ORM style)
+- Runs both in Node and in the browser
+- Lightweight & Fast with **zero dependencies**
+- Both Simple & Granular rule evaluation
+- Infinite nesting of conditions in rules
 - Supports `Any`, `All`, and `None` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, and `NotIn` operators
-- Fluent rule builder tool
-- Rule validation & debug tools
+- Validation & debug tools for rules
 
 ## Usage
 
