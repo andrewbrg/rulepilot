@@ -26,9 +26,10 @@ can evaluate to a `boolean`, `number`, `string` or other value.
 - Granular rule evaluation
 - Human-readable JSON rules
 - Infinite nesting of rule conditions
-- Supports `any`, `all`, and `none` type conditions
+- Supports `Any`, `All`, and `None` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, and `NotIn` operators
-- Supports ruleset validation and debugging
+- Fluent rule builder tool
+- Rule validation & debug tools
 
 ## Usage
 
@@ -494,7 +495,42 @@ const rule: Rule = {
 const validationResult: ValidationResult = RulePilot.validate(rule);
 ```
 
-## Building RulePilot Distribution
+## Fluent Rule Builder
+
+Although creating rules in plain JSON is very straightforward, `RulePilot` comes with a `Builder` class which can be 
+used to create rules in a fluent manner.
+
+The `add()` method allows for the addition of a root node to the rule. This new node can be a condition or a constraint 
+and can be then setup as required.
+
+The `default()` method allows for the addition of a default value result for the rule.
+
+```typescript
+import { RulePilot, Rule } from 'rulepilot';
+
+const builder = RulePilot.builder();
+
+const rule: Rule = builder
+  .add(
+    builder.condition(
+      "all",
+      [
+        builder.condition("any", [
+          builder.constraint("fieldA", "==", "bar"),
+          builder.constraint("fieldB", ">=", 2),
+        ]),
+        builder.constraint("fieldC", "not in", [1, 2, 3]),
+      ],
+      3
+    )
+  )
+  .add(builder.condition("none", [], 5))
+  .add(builder.condition("any", [builder.constraint("fieldA", "==", "value")]))
+  .default(2)
+  .build();
+```
+
+## Building The Library
 
 The distribution can be built with the following commands:
 
@@ -506,7 +542,7 @@ npm run build
 yarn build
 ```
 
-## Running Tests
+## Running Unit Tests
 
 Tests are written in Jest and can be run with the following commands:
 

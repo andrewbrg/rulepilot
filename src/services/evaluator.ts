@@ -2,7 +2,7 @@ import { ObjectDiscovery } from "./object-discovery";
 import { Condition, Constraint, Rule } from "../types/rule";
 
 export class Evaluator {
-  private objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
+  private _objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
 
   /**
    * Evaluates a rule against a set of criteria and returns the result.
@@ -36,7 +36,7 @@ export class Evaluator {
    */
   private evaluateCondition(condition: Condition, criteria: object): boolean {
     // The condition must have an 'any' or 'all' property.
-    const type = this.objectDiscovery.conditionType(condition);
+    const type = this._objectDiscovery.conditionType(condition);
 
     // If the type is 'all' or 'none', we should set the initial
     // result to true, otherwise we should set it to false.
@@ -45,10 +45,10 @@ export class Evaluator {
     // Check each node in the condition.
     for (const node of condition[type]) {
       let fn;
-      if (this.objectDiscovery.isCondition(node)) {
+      if (this._objectDiscovery.isCondition(node)) {
         fn = "evaluateCondition";
       }
-      if (this.objectDiscovery.isConstraint(node)) {
+      if (this._objectDiscovery.isConstraint(node)) {
         fn = "checkConstraint";
       }
 

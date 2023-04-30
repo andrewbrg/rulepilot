@@ -1,11 +1,21 @@
-import { Rule } from "../types/rule";
+import { Builder } from "./builder";
 import { Evaluator } from "./evaluator";
 import { ValidationResult, Validator } from "./validator";
 
-export class RulePilot {
-  private static validator: Validator = new Validator();
-  private static evaluator: Evaluator = new Evaluator();
+import { Rule } from "../types/rule";
+import { RuleError } from "../types/error";
 
+export class RulePilot {
+  private static _validator: Validator = new Validator();
+  private static _evaluator: Evaluator = new Evaluator();
+
+  /**
+   * Returns a rule builder class instance.
+   * Allows for the construction of rules using a fluent interface.
+   */
+  static builder(): Builder {
+    return new Builder(RulePilot._validator);
+  }
   /**
    * Evaluates a rule against a set of criteria and returns the result.
    *
@@ -19,10 +29,10 @@ export class RulePilot {
     // However, if `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRule && RulePilot.validate(rule);
     if (!trustRule && !validationResult.isValid) {
-      throw new Error(JSON.stringify(validationResult.error));
+      throw new RuleError(validationResult);
     }
 
-    return RulePilot.evaluator.evaluate(rule, criteria);
+    return RulePilot._evaluator.evaluate(rule, criteria);
   }
 
   /**
@@ -35,6 +45,6 @@ export class RulePilot {
    * @param rule The rule to validate.
    */
   static validate(rule: Rule): ValidationResult {
-    return RulePilot.validator.validate(rule);
+    return RulePilot._validator.validate(rule);
   }
 }

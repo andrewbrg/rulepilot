@@ -1,8 +1,8 @@
 import { RulePilot, Operator } from "../src";
 
 import { simpleValidJson } from "./rulesets/simple-valid.json";
-import { simpleValidTwoJson } from "./rulesets/simple-valid-two.json";
 import { simpleInValidJson } from "./rulesets/simple-invalid.json";
+import { simpleValidTwoJson } from "./rulesets/simple-valid-two.json";
 
 import { nestedValidJson } from "./rulesets/nested-valid.json";
 import { nestedInValidJson } from "./rulesets/nested-invalid.json";
@@ -35,7 +35,7 @@ describe("RulePilot engine correctly", () => {
 
     expect(validation.isValid).toEqual(false);
     expect(validation.error.message).toEqual(
-      "Nested conditions cannot have a result property."
+      'Nested conditions cannot have a property "result".'
     );
   });
 
