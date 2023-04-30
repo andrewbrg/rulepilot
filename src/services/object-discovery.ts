@@ -32,4 +32,13 @@ export class ObjectDiscovery {
       ? false
       : "field" in obj && "operator" in obj && "value" in obj;
   }
+
+  /**
+   * Resolves a nested property from a sting as an object path.
+   * @param path The path to resolve.
+   * @param obj The object to resolve the path against.
+   */
+  resolveNestedProperty(path, obj): any {
+    return path.split(".").reduce((prev, curr) => prev?.[curr], obj);
+  }
 }

@@ -106,7 +106,7 @@ export class Evaluator {
   private checkConstraint(constraint: Constraint, criteria: object): boolean {
     // If the value contains '.' we should assume it is a nested property
     const criterion = constraint.field.includes(".")
-      ? this.resolveNestedProperty(constraint.field, criteria)
+      ? this._objectDiscovery.resolveNestedProperty(constraint.field, criteria)
       : criteria[constraint.field];
 
     // If the criteria object does not have the field
@@ -141,15 +141,5 @@ export class Evaluator {
       default:
         return false;
     }
-  }
-
-  /**
-   * Resolves a nested property from a sting as an object path.
-   * @param path The path to resolve.
-   * @param obj The object to resolve the path against.
-   */
-  private resolveNestedProperty(path, obj): any {
-    let properties = Array.isArray(path) ? path : path.split(".");
-    return properties.reduce((prev, curr) => prev?.[curr], obj);
   }
 }
