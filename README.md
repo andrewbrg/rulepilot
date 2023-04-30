@@ -28,7 +28,7 @@ each condition's evaluation.
 - Human-readable JSON rules
 - Fluent rule builder tool (ORM style)
 - Runs both in Node and in the browser
-- Lightweight & Fast with **zero dependencies**
+- Lightweight with **zero dependencies** & Fast _(10,000 rule evaluations in ~35-40ms)_
 - Both Simple & Granular rule evaluation
 - Infinite nesting of conditions in rules
 - Supports `Any`, `All`, and `None` type conditions
