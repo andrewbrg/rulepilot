@@ -18,9 +18,8 @@ fashion.
 Simple rules can be written to evaluate to a `boolean` value _(indicating whether the criteria tested passes the rule)_.
 
 Otherwise, granular rules can be created, where each condition of the rule can evaluate to a `boolean`, `number`, 
-`string`, `object` or `array`. This is particularly useful when you want to evaluate a rule and return a value based on
-the result of each condition's evaluation.
-
+`string`, `object` or `array`. This is particularly useful when you want to evaluate a rule and return a result based on 
+each condition's evaluation.
 
 ## Features
 
