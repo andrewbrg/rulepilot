@@ -1,0 +1,11 @@
+name: Clear README Cache
+on:
+  push:
+    branches:
+      - master
+      - main
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -w "\n" -s -X PURGE https://camo.githubusercontent.com/959859b89a8509982d6238c69f45767128f4d119eaa9e7b7f6185f43ed9ec064/68747470733a2f2f62616467652e667572792e696f2f6a732f72756c6570696c6f742e737667
