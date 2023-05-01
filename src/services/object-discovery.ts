@@ -1,4 +1,4 @@
-import { Condition, ConditionType } from "../types/rule";
+import { Condition, ConditionType, Constraint } from "../types/rule";
 
 export class ObjectDiscovery {
   /**
@@ -17,8 +17,8 @@ export class ObjectDiscovery {
    * Checks an object to see if it is a valid condition.
    * @param obj The object to check.
    */
-  isCondition(obj: unknown): boolean {
-    return "object" !== typeof obj
+  isCondition(obj: unknown): obj is Condition {
+    return !this.isObject(obj)
       ? false
       : "any" in obj || "all" in obj || "none" in obj;
   }
@@ -27,10 +27,18 @@ export class ObjectDiscovery {
    * Checks an object to see if it is a valid constraint.
    * @param obj The object to check.
    */
-  isConstraint(obj: unknown): boolean {
-    return "object" !== typeof obj
+  isConstraint(obj: unknown): obj is Constraint {
+    return !this.isObject(obj)
       ? false
       : "field" in obj && "operator" in obj && "value" in obj;
+  }
+
+  /**
+   * Returns true if the passed parameter is an object.
+   * @param obj The item to test.
+   */
+  isObject(obj: unknown): obj is object {
+    return "object" === typeof obj && !Array.isArray(obj) && obj !== null;
   }
 
   /**

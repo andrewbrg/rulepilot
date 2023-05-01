@@ -2,13 +2,15 @@ import { createHash } from "crypto";
 import { EventEmitter } from "events";
 
 import { Logger } from "./logger";
+import { ObjectDiscovery } from "./object-discovery";
 
 export class Mutator {
   private _cache: Map<string, any> = new Map();
   private _buffer: Map<string, boolean> = new Map();
-
-  private _eventEmitter = new EventEmitter();
   private _mutations: Map<string, Function> = new Map();
+
+  private _objectDiscovery = new ObjectDiscovery();
+  private _eventEmitter = new EventEmitter();
 
   /**
    * Adds a mutation to the mutator instance.
@@ -107,10 +109,9 @@ export class Mutator {
       const path = parentPath ? `${parentPath}.${key}` : key;
 
       // If the value is an object, we should recurse.
-      result =
-        "object" === typeof criteria[key]
-          ? result || this.hasMutations(criteria[key], result, path)
-          : result || this._mutations.has(path);
+      result = this._objectDiscovery.isObject(criteria[key])
+        ? result || this.hasMutations(criteria[key], result, path)
+        : result || this._mutations.has(path);
     }
 
     return result;
@@ -131,7 +132,7 @@ export class Mutator {
           // Prepare dotted path to the current property.
           const path = parentPath ? `${parentPath}.${key}` : key;
 
-          if ("object" === typeof criteria[key]) {
+          if (this._objectDiscovery.isObject(criteria[key])) {
             await this.applyMutations(criteria[key], path);
           }
 

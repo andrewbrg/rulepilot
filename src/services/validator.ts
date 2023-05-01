@@ -27,7 +27,8 @@ export class Validator {
     // Validate the 'conditions' property.
     if (
       conditions.length === 0 ||
-      ("object" === typeof conditions[0] && !Object.keys(conditions[0]).length)
+      (this.objectDiscovery.isObject(conditions[0]) &&
+        !Object.keys(conditions[0]).length)
     ) {
       return {
         isValid: false,

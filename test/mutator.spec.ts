@@ -6,9 +6,17 @@ import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
 
 let rp: RulePilot;
+
 const mutation1 = async (value) => {
   const result = await axios.get(
     `https://restcountries.com/v3.1/name/${value}?fullText=true`
+  );
+  return result.data[0].cca2;
+};
+
+const mutation2 = async (value) => {
+  const result = await axios.get(
+    `https://restcountries.com/v3.1/name/${value[0]}?fullText=true`
   );
   return result.data[0].cca2;
 };
@@ -101,6 +109,40 @@ describe("RulePilot mutator correctly", () => {
     );
     expect(console.debug).toBeCalledTimes(9);
     expect(result).toEqual([3, 2, 3]);
+  });
+
+  it("Performs a migration with an array parameter", async () => {
+    rp.addMutation("CountryIso", mutation2);
+
+    const result = await rp.evaluate(
+      {
+        conditions: [
+          {
+            all: [{ field: "CountryIso", operator: "==", value: "GB" }],
+          },
+        ],
+      },
+      { CountryIso: ["United Kingdom", "Finland"] }
+    );
+
+    expect(result).toEqual(true);
+  });
+
+  it("Performs a migration with a nested array parameter", async () => {
+    rp.addMutation("foo.bar", mutation2);
+
+    const result = await rp.evaluate(
+      {
+        conditions: [
+          {
+            all: [{ field: "foo.bar", operator: "==", value: "GB" }],
+          },
+        ],
+      },
+      { foo: { bar: ["United Kingdom", "Finland"] } }
+    );
+
+    expect(result).toEqual(true);
   });
 
   it("Mutation cache works properly", async () => {
