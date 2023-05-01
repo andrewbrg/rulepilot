@@ -32,6 +32,6 @@ jobs:
           node-version: 16
           registry-url: https://npm.pkg.github.com/
           scope: "@andrewbrg/rulepilot"
-      - run: npm publish --@andrewbrg:registry=https://npm.pkg.github.com/ --access public
+      - run: npm publish --@andrewbrg:registry=https://npm.pkg.github.com/
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
