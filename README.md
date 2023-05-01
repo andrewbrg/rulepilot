@@ -143,8 +143,8 @@ criteria.totalCheckoutPrice = 25.0;
 result = await RulePilot.evaluate(rule, criteria);
 ```
 
-We can add additional requirements to the rule, for example apart from the above-mentioned conditions, we can also
-require that the user is either `over 18` years old or `has a valid student card`.
+We can add additional conditions to the rule, for example apart from the above-mentioned conditions, we can also
+say that if the user is either `over 18` years old or `has a valid student card` then we will evaluate to true.
 
 Take note of how the `conditions` property is now an array of objects.
 
@@ -573,7 +573,7 @@ let result = await RulePilot.evaluate(rule, criteria);
 
 ## Validating A Rule
 
-of the rule to ensure it is valid and properly structured.
+Validation can be performed on a rule to ensure it is valid and properly structured.
 
 The `validate()` method will return `true` if the rule is valid, otherwise it will return an error message
 describing the problem along with the problem node from the rule for easy debugging.
