@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ArtiomTr/jest-coverage-report-action@v2
         with:
-          test-script: yarn jest --testPathPattern=test --detectOpenHandles --color --forceExit --coverage
+          test-script: yarn jest --testPathPattern=test --color --forceExit --coverage
       - run: yarn
       - run: yarn build
       - run: yarn test

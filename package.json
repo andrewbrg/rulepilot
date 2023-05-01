@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "badges": "jest-badges-readme",
-    "test": "jest --testPathPattern=test --detectOpenHandles --color --forceExit",
+    "test": "jest --testPathPattern=test --color --forceExit",
     "build": "rm -rf dist && tsc",
     "prettier": "prettier --write ."
   },
