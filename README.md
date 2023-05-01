@@ -30,6 +30,7 @@ each condition's evaluation.
 - Fluent rule builder tool (ORM style)
 - Both Simple & Granular rule evaluation
 - Infinite condition nesting
+- Dynamic criteria mutation
 - Supports Criteria objects with nested properties
 - Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
