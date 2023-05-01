@@ -63,6 +63,28 @@ const rule: Rule = {
 };
 ```
 
+### Static vs Instantiated Approach
+
+The `RulePilot` library can be used in two ways, either as a static class or as an instance.
+
+The static class is great for most cases as long as you do not intend to use different mutations in multiple places 
+in your codebase, _(more on what mutations are further down)_.
+
+Otherwise, you can create an instance of the `RulePilot` class and use it to evaluate rules.
+
+```typescript
+import { RulePilot } from "rulepilot";
+
+let result;
+
+// Static
+ esult = await RulePilot.evaluate(rule, criteria);
+
+// Instance
+const rulePilot = new RulePilot();
+result = await rulePilot.evaluate(rule, criteria);
+```
+
 ### Basic Example
 
 Here we are defining a rule which will evaluate to `true` or `false` based on the criteria provided. In this example,
@@ -109,7 +131,7 @@ const criteria = {
  *
  * The result will be true
  */
-let result = RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate(rule, criteria);
 
 // However, if any of the criteria do not pass the check, the result will be false
 criteria.totalCheckoutPrice = 25.0;
@@ -117,7 +139,7 @@ criteria.totalCheckoutPrice = 25.0;
 /**
  * The result will be false
  */
-result = RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate(rule, criteria);
 ```
 
 We can add additional requirements to the rule, for example apart from the above-mentioned conditions, we can also
@@ -177,13 +199,13 @@ const criteria = {
 /**
  * The result will be false
  */
-let result = RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate(rule, criteria);
 
 /**
  * The result will be true
  */
 criteria.hasStudentCard = true;
-result = RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate(rule, criteria);
 ```
 
 If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition.
@@ -420,7 +442,7 @@ const criteria = {
 /**
  * The result will be 5
  */
-let result = RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate(rule, criteria);
 
 criteria.country = "SE";
 criteria.city = "Linköping";
@@ -428,7 +450,7 @@ criteria.city = "Linköping";
 /**
  * The result will be 10
  */
-result = RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate(rule, criteria);
 
 criteria.country = "IT";
 criteria.age = 17;
@@ -437,7 +459,7 @@ criteria.hasStudentCard = false;
 /**
  * The result will be false
  */
-result = RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate(rule, criteria);
 ```
 
 **Important** When using granular rules, the order of conditions in the rule matters!
@@ -463,7 +485,7 @@ const rule: Rule = {
 /**
  * The result will be 2.4
  */
-let result = RulePilot.evaluate(rule, {});
+let result = await RulePilot.evaluate(rule, {});
 ```
 
 In such a setup as seen above, if no conditions are met, the result will be `2.5`.
@@ -509,7 +531,7 @@ const criteria = {
 /**
  * The result will be true
  */
-let result = RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate(rule, criteria);
 ```
 
 ### Evaluating Multiple Criteria At Once
@@ -545,7 +567,7 @@ const criteria = [
 /**
  * The result will be [true, false]
  */
-let result = RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate(rule, criteria);
 ```
 
 ## Validating A Rule
@@ -575,6 +597,89 @@ const rule: Rule = {
 };
 
 const validationResult: ValidationResult = RulePilot.validate(rule);
+```
+
+## Criteria Mutations
+
+Mutations are a powerful tool built straight into `RulePilot` which allow for the modification of criteria before
+evaluation.
+
+Mutations can be basic functions which modify the criteria in some way, or they can be more complex functions which make 
+API calls or perform other operations.
+
+The mutation logic built into `RulePilot` is designed to be as efficient as possible, avoiding multiple repeat evaluations 
+of by caching the results of previous evaluations.
+
+Let's take a look at a simple example use case for mutations, where we uss an API call to fetch account information into
+the criteria before evaluation.
+
+```typescript
+import { RulePilot, Rule } from "rulepilot";
+
+// Example client method to fetch account information
+import { fetchAccount } from './api'
+
+const rule: Rule = {
+  conditions: [{
+    "all": [{
+      field: "account.balance",
+      operator: ">=",
+      value: 100.00,
+    },
+    {
+      field: "account.age",
+      operator: ">=",
+      value: 18,
+    }],
+  }],
+};
+
+const criteria = [{
+  account: 123,
+}, {
+  account: 123,
+}, {
+  account: 124,
+}];
+
+// Instantiate a new RulePilot instance (recommended)
+const rulePilot = new RulePilot();
+
+// Add a mutation to fetch account information
+// This mutation will be called once for each unique accountId in the criteria
+rulePilot.addMutation("account", async (accountId, criteria) => {
+  return await fetchAccount(accountId);
+});
+
+// Evaluate the rule
+const result = await rulePilot.evaluate(rule, criteria);
+```
+
+In the example above, the `fetchAccount()` function will be called twice in parallel with (123, 124). All 3 criteria 
+objects will be updated with the account information before the rule is evaluated.
+
+### Important Notes About Mutations
+
+- Mutations are only called once per unique criteria value
+- Multiple mutations are called in parallel, not sequentially (for performance reasons)
+- Mutations are cached by default, so if the same criteria value is encountered again, the mutation will not be called
+- Mutations will copy the criteria object before mutating it, so the original criteria object will not be modified
+
+**Note:** Mutations can be used with the static implementation of `RulePilot`, e.g. `RulePilot.addMutation(...)`, 
+however it is not recommended to do so _(instead the instantiated implementation should be used)_, otherwise you risk 
+having different parts of your application pushing different mutations for different rules to the same general pool.
+
+**Note:** Mutation results are permanently cached for any given criteria value, so if you need to re-evaluate any rule
+with the same criteria mutation while needing to re-process the mutation, you will need to clear the cache first.
+
+```typescript
+// Clear the cache for the account mutation
+rulePilot.clearMutationCache("account");
+
+// or ...
+
+// Clear the entire mutation cache
+rulePilot.clearMutationCache();
 ```
 
 ## Fluent Rule Builder

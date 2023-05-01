@@ -47,6 +47,8 @@ describe("RulePilot mutator correctly", () => {
 
   it("Caches async mutation results", async () => {
     const r = new RulePilot();
+
+    r.addMutation("Leverage", (value) => value);
     r.addMutation("CountryIso", async (value) => {
       const result = await axios.get(
         `https://restcountries.com/v3.1/name/${value}?fullText=true`
@@ -54,24 +56,24 @@ describe("RulePilot mutator correctly", () => {
       return result.data[0].cca2;
     });
 
-    expect(
-      await r.evaluate(valid3Json, [
-        {
-          CountryIso: "United Kingdom",
-          Leverage: 60,
-          Monetization: "Real",
-        },
-        {
-          CountryIso: "United Kingdom",
-          Leverage: 200,
-          Monetization: "Real",
-        },
-        {
-          CountryIso: "United Kingdom",
-          Leverage: 60,
-          Monetization: "Real",
-        },
-      ])
-    ).toBeTruthy();
+    const result = await r.evaluate(valid3Json, [
+      {
+        CountryIso: "United Kingdom",
+        Leverage: 60,
+        Monetization: "Real",
+      },
+      {
+        CountryIso: "United Kingdom",
+        Leverage: 200,
+        Monetization: "Real",
+      },
+      {
+        CountryIso: "United Kingdom",
+        Leverage: 60,
+        Monetization: "Real",
+      },
+    ]);
+
+    expect(result).toEqual([3, 2, 3]);
   });
 });

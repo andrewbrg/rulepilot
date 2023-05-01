@@ -35,6 +35,29 @@ export class RulePilot {
   }
 
   /**
+   * Removes a mutation to the rule pilot instance.
+   * Any cached mutation values for this mutation will be purged.
+   *
+   * @param name The name of the mutation.
+   */
+  removeMutation(name: string): RulePilot {
+    this._mutator.remove(name);
+    return this;
+  }
+
+  /**
+   * Clears the mutator cache.
+   * The entire cache, or cache for a specific mutator, can be cleared
+   * by passing or omitting the mutator name as an argument.
+   *
+   * @param name The mutator name to clear the cache for.
+   */
+  clearMutationCache(name?: string): RulePilot {
+    this._mutator.clearCache(name);
+    return this;
+  }
+
+  /**
    * Evaluates a rule against a set of criteria and returns the result.
    * If the criteria is an array (indicating multiple criteria to test),
    * the rule will be evaluated against each item in the array and
@@ -51,7 +74,7 @@ export class RulePilot {
     trustRule = false
   ): Promise<T> {
     // Before we evaluate the rule, we should validate it.
-    // However, if `trustRuleset` is set to true, we will skip validation.
+    // If `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRule && this.validate(rule);
     if (!trustRule && !validationResult.isValid) {
       throw new RuleError(validationResult);
@@ -124,5 +147,26 @@ export class RulePilot {
    */
   static addMutation(name: string, mutation: Function): RulePilot {
     return RulePilot._rulePilot.addMutation(name, mutation);
+  }
+
+  /**
+   * Removes a mutation to the rule pilot instance.
+   * Any cached mutation values for this mutation will be purged.
+   *
+   * @param name The name of the mutation.
+   */
+  static removeMutation(name: string): RulePilot {
+    return RulePilot._rulePilot.removeMutation(name);
+  }
+
+  /**
+   * Clears the mutator cache.
+   * The entire cache, or cache for a specific mutator, can be cleared
+   * by passing or omitting the mutator name as an argument.
+   *
+   * @param name The mutator name to clear the cache for.
+   */
+  static clearMutationCache(name?: string): RulePilot {
+    return RulePilot._rulePilot.clearMutationCache(name);
   }
 }
