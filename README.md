@@ -608,10 +608,11 @@ evaluation.
 Mutations can be basic functions which modify the criteria in some way, or they can be more complex functions which make 
 API calls or perform other operations.
 
-The mutation logic built into `RulePilot` is designed to be as efficient as possible, avoiding multiple repeat evaluations 
-of by caching the results of previous evaluations.
+The mutation logic built into `RulePilot` is designed to be as efficient as possible, avoiding multiple repeat 
+evaluations by caching the results of previous evaluations. The mutator logic also identifies all unique mutations 
+required at runtime and executes them all in parallel before passing the criteria to the rule engine for evaluation.
 
-Let's take a look at a simple example use case for mutations, where we uss an API call to fetch account information into
+Let's take a look at a simple example use case for mutations, where we use an API call to fetch account information into
 the criteria before evaluation.
 
 ```typescript
