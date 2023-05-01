@@ -28,5 +28,5 @@
     "incremental": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules","dist","coverage",".github"]
+  "exclude": ["node_modules", "dist", "coverage", ".github"]
 }

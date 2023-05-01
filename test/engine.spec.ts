@@ -1,4 +1,4 @@
-import { RulePilot, Operator } from "../src";
+import { RulePilot, Operator, RuleError } from "../src";
 
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid2Json } from "./rulesets/valid2.json";
@@ -8,22 +8,25 @@ import { valid4Json } from "./rulesets/valid4.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 
 describe("RulePilot engine correctly", () => {
-  it("Evaluates a simple ruleset", () => {
-    expect(RulePilot.evaluate(valid1Json, { ProfitPercentage: 20 })).toEqual(
-      true
-    );
-    expect(RulePilot.evaluate(valid1Json, { ProfitPercentage: 2 })).toEqual(
-      false
-    );
+  it("Evaluates a simple ruleset", async () => {
     expect(
-      RulePilot.evaluate(valid1Json, {
+      await RulePilot.evaluate(valid1Json, { ProfitPercentage: 20 })
+    ).toEqual(true);
+
+    expect(
+      await RulePilot.evaluate(valid1Json, { ProfitPercentage: 2 })
+    ).toEqual(false);
+
+    expect(
+      await RulePilot.evaluate(valid1Json, {
         WinRate: 80,
         AverageTradeDuration: 5,
         Duration: 9000000,
       })
     ).toEqual(false);
+
     expect(
-      RulePilot.evaluate(valid1Json, {
+      await RulePilot.evaluate(valid1Json, {
         WinRate: 80,
         AverageTradeDuration: 5,
         Duration: 9000000,
@@ -32,9 +35,9 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(true);
   });
 
-  it("Evaluates to false if operator is unknown", () => {
+  it("Evaluates to false if operator is unknown", async () => {
     expect(
-      RulePilot.evaluate(
+      await RulePilot.evaluate(
         {
           conditions: [
             {
@@ -50,9 +53,9 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(false);
   });
 
-  it("Resolves nested field definitions", () => {
+  it("Resolves nested field definitions", async () => {
     expect(
-      RulePilot.evaluate(
+      await RulePilot.evaluate(
         {
           conditions: [
             {
@@ -69,9 +72,9 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(true);
   });
 
-  it("Handles missing nested field definitions", () => {
+  it("Handles missing nested field definitions", async () => {
     expect(
-      RulePilot.evaluate(
+      await RulePilot.evaluate(
         {
           conditions: [
             {
@@ -88,9 +91,9 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(false);
   });
 
-  it("Handles array of criteria properly", () => {
+  it("Handles array of criteria properly", async () => {
     expect(
-      RulePilot.evaluate(
+      await RulePilot.evaluate(
         {
           conditions: [
             {
@@ -116,28 +119,38 @@ describe("RulePilot engine correctly", () => {
   });
 
   it("Throws an error on invalid not runnable ruleset", () => {
-    expect(() => RulePilot.evaluate({ conditions: [] }, {})).toThrow(Error);
-  });
-
-  it("Evaluates an invalid but runnable ruleset if marked as trusted", () => {
-    expect(RulePilot.evaluate(invalid1Json, {}, true)).toEqual(2);
-  });
-
-  it("Evaluates a nested ruleset", () => {
-    expect(RulePilot.evaluate(valid3Json, {})).toEqual(2);
-    expect(RulePilot.evaluate(valid3Json, { Category: "Islamic" })).toEqual(4);
-    expect(RulePilot.evaluate(valid3Json, { Monetization: "Real" })).toEqual(2);
-    expect(RulePilot.evaluate(valid3Json, { Leverage: 1000 })).toEqual(3);
-    expect(RulePilot.evaluate(valid3Json, { Leverage: 999 })).toEqual(2);
     expect(
-      RulePilot.evaluate(valid3Json, {
+      async () => await RulePilot.evaluate({ conditions: [] }, {})
+    ).rejects.toThrow(RuleError);
+  });
+
+  it("Evaluates an invalid but runnable ruleset if marked as trusted", async () => {
+    expect(await RulePilot.evaluate(invalid1Json, {}, true)).toEqual(2);
+  });
+
+  it("Evaluates a nested ruleset", async () => {
+    expect(await RulePilot.evaluate(valid3Json, {})).toEqual(2);
+    expect(await RulePilot.evaluate(valid3Json, { Leverage: 1000 })).toEqual(3);
+    expect(await RulePilot.evaluate(valid3Json, { Leverage: 999 })).toEqual(2);
+
+    expect(
+      await RulePilot.evaluate(valid3Json, { Category: "Islamic" })
+    ).toEqual(4);
+
+    expect(
+      await RulePilot.evaluate(valid3Json, { Monetization: "Real" })
+    ).toEqual(2);
+
+    expect(
+      await RulePilot.evaluate(valid3Json, {
         Monetization: "Real",
         Leverage: 150,
         CountryIso: "FI",
       })
     ).toEqual(3);
+
     expect(
-      RulePilot.evaluate(valid3Json, {
+      await RulePilot.evaluate(valid3Json, {
         Monetization: "Real",
         Leverage: 150,
         CountryIso: "FI",
@@ -147,16 +160,19 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(3);
   });
 
-  it("Evaluates a simple ruleset with redundant condition", () => {
-    expect(RulePilot.evaluate(valid4Json, { foo: true }, true)).toEqual(2);
+  it("Evaluates a simple ruleset with redundant condition", async () => {
+    expect(await RulePilot.evaluate(valid4Json, { foo: true }, true)).toEqual(
+      2
+    );
+
     expect(
-      RulePilot.evaluate(valid4Json, { Category: "Islamic" }, true)
+      await RulePilot.evaluate(valid4Json, { Category: "Islamic" }, true)
     ).toEqual(4);
   });
 
-  it("Evaluates a simple ruleset with none type condition", () => {
+  it("Evaluates a simple ruleset with none type condition", async () => {
     expect(
-      RulePilot.evaluate(valid2Json, {
+      await RulePilot.evaluate(valid2Json, {
         Leverage: 100,
         WinRate: 80,
         AverageTradeDuration: 5,
@@ -166,7 +182,7 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(true);
 
     expect(
-      RulePilot.evaluate(valid2Json, {
+      await RulePilot.evaluate(valid2Json, {
         AverageTradeDuration: 10,
         Foo: 10,
       })

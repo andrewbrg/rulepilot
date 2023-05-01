@@ -29,8 +29,9 @@ export class RulePilot {
    * @param name The name of the mutation.
    * @param mutation The mutation function.
    */
-  addMutation(name: string, mutation: Function): void {
+  addMutation(name: string, mutation: Function): RulePilot {
     this._mutator.add(name, mutation);
+    return this;
   }
 
   /**
@@ -121,7 +122,7 @@ export class RulePilot {
    * @param name The name of the mutation.
    * @param mutation The mutation function.
    */
-  static addMutation(name: string, mutation: Function) {
-    RulePilot.addMutation(name, mutation);
+  static addMutation(name: string, mutation: Function): RulePilot {
+    return RulePilot._rulePilot.addMutation(name, mutation);
   }
 }

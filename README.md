@@ -2,10 +2,9 @@
 
 [![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot)
 
-| Statements                                                                                  | Functions | Lines                                                                                   |
-|---------------------------------------------------------------------------------------------|-----------|-----------------------------------------------------------------------------------------|
+| Statements                                                                  | Functions                                                                  | Lines                                                                  |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | ![Statements](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Functions](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) | ![Lines](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg) |
-
 
 ## Overview
 
@@ -13,12 +12,12 @@
 integrate into your application.
 
 The rule engine evaluates human-readable JSON rules against a set of criteria. The rules are evaluated in a top-down
-fashion. 
+fashion.
 
 Simple rules can be written to evaluate to a `boolean` value _(indicating whether the criteria tested passes the rule)_.
 
-Otherwise, granular rules can be created, where each condition of the rule can evaluate to a `boolean`, `number`, 
-`string`, `object` or `array`. This is particularly useful when you want to evaluate a rule and return a result based on 
+Otherwise, granular rules can be created, where each condition of the rule can evaluate to a `boolean`, `number`,
+`string`, `object` or `array`. This is particularly useful when you want to evaluate a rule and return a result based on
 each condition's evaluation.
 
 ## Features
@@ -51,69 +50,69 @@ yarn add rulepilot
 ### Importing
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot } from "rulepilot";
 ```
 
 For TypeScript users, you can import the `Rule` interface to get type definitions for the rule JSON.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
   // ...
-}
+};
 ```
 
 ### Basic Example
 
-Here we are defining a rule which will evaluate to `true` or `false` based on the criteria provided. In this example, 
+Here we are defining a rule which will evaluate to `true` or `false` based on the criteria provided. In this example,
 we are checking whether a user is allowed to benefit from a discount at checkout of not.
 
-For the discount to be applied, the user must be from either the `UK or Finland`, have a `coupon` and the total checkout 
+For the discount to be applied, the user must be from either the `UK or Finland`, have a `coupon` and the total checkout
 price must be greater than or equal to `120.00`.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 // Define a rule which caters for your needs
 const rule: Rule = {
-  "conditions": {
-    "all": [
+  conditions: {
+    all: [
       {
-        "field": "country",
-        "operator": "in",
-        "value": ["GB", "FI"]
+        field: "country",
+        operator: "in",
+        value: ["GB", "FI"],
       },
       {
-        "field": "hasCoupon",
-        "operator": "==",
-        "value": true
+        field: "hasCoupon",
+        operator: "==",
+        value: true,
       },
       {
-        "field": "totalCheckoutPrice",
-        "operator": ">=",
-        "value": 120.00
-      }
-    ]
-  }
-}
+        field: "totalCheckoutPrice",
+        operator: ">=",
+        value: 120.0,
+      },
+    ],
+  },
+};
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
   country: "GB",
-  totalCheckoutPrice: 125.00,
+  totalCheckoutPrice: 125.0,
   hasCoupon: true,
-}
+};
 
 /**
  * Evaluate the criteria against the rule
- * 
+ *
  * The result will be true
  */
 let result = RulePilot.evaluate(rule, criteria);
 
 // However, if any of the criteria do not pass the check, the result will be false
-criteria.totalCheckoutPrice = 25.00
+criteria.totalCheckoutPrice = 25.0;
 
 /**
  * The result will be false
@@ -121,59 +120,59 @@ criteria.totalCheckoutPrice = 25.00
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-We can add additional requirements to the rule, for example apart from the above-mentioned conditions, we can also 
+We can add additional requirements to the rule, for example apart from the above-mentioned conditions, we can also
 require that the user is either `over 18` years old or `has a valid student card`.
 
 Take note of how the `conditions` property is now an array of objects.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 // Define a rule which caters for your needs
 const rule: Rule = {
-  "conditions": [
+  conditions: [
     {
-      "all": [
+      all: [
         {
-          "field": "country",
-          "operator": "in",
-          "value": ["GB", "FI"]
+          field: "country",
+          operator: "in",
+          value: ["GB", "FI"],
         },
         {
-          "field": "hasCoupon",
-          "operator": "==",
-          "value": true
+          field: "hasCoupon",
+          operator: "==",
+          value: true,
         },
         {
-          "field": "totalCheckoutPrice",
-          "operator": ">=",
-          "value": 120.00
-        }
-      ]
+          field: "totalCheckoutPrice",
+          operator: ">=",
+          value: 120.0,
+        },
+      ],
     },
     {
-      "any": [
+      any: [
         {
-          "field": "age",
-          "operator": ">=",
-          "value": 18
+          field: "age",
+          operator: ">=",
+          value: 18,
         },
         {
-          "field": "hasStudentCard",
-          "operator": "==",
-          "value": true
-        }
-      ]
-    }
-  ]
-}
+          field: "hasStudentCard",
+          operator: "==",
+          value: true,
+        },
+      ],
+    },
+  ],
+};
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
   country: "GB",
-  totalCheckoutPrice: 20.00,
+  totalCheckoutPrice: 20.0,
   hasCoupon: true,
-}
+};
 
 /**
  * The result will be false
@@ -187,134 +186,136 @@ criteria.hasStudentCard = true;
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition. 
+If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition.
 
-For example, we can add a requirement that a discount will also be given to all users from Sweden as long as they are 
+For example, we can add a requirement that a discount will also be given to all users from Sweden as long as they are
 18+ or have a valid student card _(irrelevant of any other conditions set)_.
 
 ```typescript
 const rule: Rule = {
-  "conditions": [
+  conditions: [
     {
-      "any": [
+      any: [
         {
-          "all": [{
-            "field": "country",
-            "operator": "in",
-            "value": ["GB", "FI"]
-          },
+          all: [
             {
-              "field": "hasCoupon",
-              "operator": "==",
-              "value": true
+              field: "country",
+              operator: "in",
+              value: ["GB", "FI"],
             },
             {
-              "field": "totalCheckoutPrice",
-              "operator": ">=",
-              "value": 120.00
-            }
-          ]
+              field: "hasCoupon",
+              operator: "==",
+              value: true,
+            },
+            {
+              field: "totalCheckoutPrice",
+              operator: ">=",
+              value: 120.0,
+            },
+          ],
         },
         {
-          "field": "country",
-          "operator": "==",
-          "value": "SE"
-        }
-      ]
+          field: "country",
+          operator: "==",
+          value: "SE",
+        },
+      ],
     },
     {
-      "any": [
+      any: [
         {
-          "field": "age",
-          "operator": ">=",
-          "value": 18
+          field: "age",
+          operator: ">=",
+          value: 18,
         },
         {
-          "field": "hasStudentCard",
-          "operator": "==",
-          "value": true
-        }
-      ]
-    }
-  ]
+          field: "hasStudentCard",
+          operator: "==",
+          value: true,
+        },
+      ],
+    },
+  ],
 };
 ```
 
-The criteria can be narrowed down further by specifying `Swedish` users cannot be from `Stockholm` or `Gothenburg` 
+The criteria can be narrowed down further by specifying `Swedish` users cannot be from `Stockholm` or `Gothenburg`
 otherwise they must spend `more than 200.00` at checkout.
 
 ```typescript
 const rule: Rule = {
-  "conditions": [{
-    "any": [
-      {
-        "all": [
-          {
-            "field": "country",
-            "operator": "in",
-            "value": ["GB", "FI"]
-          },
-          {
-            "field": "hasCoupon",
-            "operator": "==",
-            "value": true
-          },
-          {
-            "field": "totalCheckoutPrice",
-            "operator": ">=",
-            "value": 120.00
-          }
-        ]
-      },
-      {
-        "any": [
-          {
-            "all": [
-              {
-                "field": "country",
-                "operator": "==",
-                "value": "SE"
-              },
-              {
-                "field": "city",
-                "operator": "not in",
-                "value": ["Stockholm", "Gothenburg"]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "field": "country",
-                "operator": "==",
-                "value": "SE"
-              },
-              {
-                "field": "city",
-                "operator": "totalCheckoutPrice",
-                "value": 200.00
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
+  conditions: [
     {
-      "any": [
+      any: [
         {
-          "field": "age",
-          "operator": ">=",
-          "value": 18
+          all: [
+            {
+              field: "country",
+              operator: "in",
+              value: ["GB", "FI"],
+            },
+            {
+              field: "hasCoupon",
+              operator: "==",
+              value: true,
+            },
+            {
+              field: "totalCheckoutPrice",
+              operator: ">=",
+              value: 120.0,
+            },
+          ],
         },
         {
-          "field": "hasStudentCard",
-          "operator": "==",
-          "value": true
-        }
-      ]
-    }
-  ]
+          any: [
+            {
+              all: [
+                {
+                  field: "country",
+                  operator: "==",
+                  value: "SE",
+                },
+                {
+                  field: "city",
+                  operator: "not in",
+                  value: ["Stockholm", "Gothenburg"],
+                },
+              ],
+            },
+            {
+              all: [
+                {
+                  field: "country",
+                  operator: "==",
+                  value: "SE",
+                },
+                {
+                  field: "city",
+                  operator: "totalCheckoutPrice",
+                  value: 200.0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      any: [
+        {
+          field: "age",
+          operator: ">=",
+          value: 18,
+        },
+        {
+          field: "hasStudentCard",
+          operator: "==",
+          value: true,
+        },
+      ],
+    },
+  ],
 };
 ```
 
@@ -328,85 +329,86 @@ To accomplish this, we can assign a `result` to each condition which will be use
 
 ```typescript
 const rule: Rule = {
-  "conditions": [{
-    "any": [
-      {
-        "all": [
-          {
-            "field": "country",
-            "operator": "in",
-            "value": ["GB", "FI"]
-          },
-          {
-            "field": "hasCoupon",
-            "operator": "==",
-            "value": true
-          },
-          {
-            "field": "totalCheckoutPrice",
-            "operator": ">=",
-            "value": 120.00
-          }
-        ]
-      },
-      {
-        "any": [
-          {
-            "all": [
-              {
-                "field": "country",
-                "operator": "==",
-                "value": "SE"
-              },
-              {
-                "field": "city",
-                "operator": "not in",
-                "value": ["Stockholm", "Gothenburg"]
-              }
-            ]
-          },
-          {
-            "all": [
-              {
-                "field": "country",
-                "operator": "==",
-                "value": "SE"
-              },
-              {
-                "field": "city",
-                "operator": "totalCheckoutPrice",
-                "value": 200.00
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "result": 5
-  },
+  conditions: [
     {
-      "any": [
+      any: [
         {
-          "field": "age",
-          "operator": ">=",
-          "value": 18
+          all: [
+            {
+              field: "country",
+              operator: "in",
+              value: ["GB", "FI"],
+            },
+            {
+              field: "hasCoupon",
+              operator: "==",
+              value: true,
+            },
+            {
+              field: "totalCheckoutPrice",
+              operator: ">=",
+              value: 120.0,
+            },
+          ],
         },
         {
-          "field": "hasStudentCard",
-          "operator": "==",
-          "value": true
-        }
+          any: [
+            {
+              all: [
+                {
+                  field: "country",
+                  operator: "==",
+                  value: "SE",
+                },
+                {
+                  field: "city",
+                  operator: "not in",
+                  value: ["Stockholm", "Gothenburg"],
+                },
+              ],
+            },
+            {
+              all: [
+                {
+                  field: "country",
+                  operator: "==",
+                  value: "SE",
+                },
+                {
+                  field: "city",
+                  operator: "totalCheckoutPrice",
+                  value: 200.0,
+                },
+              ],
+            },
+          ],
+        },
       ],
-      "result": 10
-    }
-  ]
+      result: 5,
+    },
+    {
+      any: [
+        {
+          field: "age",
+          operator: ">=",
+          value: 18,
+        },
+        {
+          field: "hasStudentCard",
+          operator: "==",
+          value: true,
+        },
+      ],
+      result: 10,
+    },
+  ],
 };
 ```
 
 In such a setup the result of our evaluation will be the value of the `result` property in condition which was met first.
 
 ```typescript
-import { RulePilot } from 'rulepilot';
+import { RulePilot } from "rulepilot";
 
 // Define the criteria which will be evaluated against the rule
 const criteria = {
@@ -438,7 +440,7 @@ criteria.hasStudentCard = false;
 result = RulePilot.evaluate(rule, criteria);
 ```
 
-**Important** When using granular rules, the order of conditions in the rule matters! 
+**Important** When using granular rules, the order of conditions in the rule matters!
 
 The first condition in the rule which is met will be the one which is used to calculate the discount.
 
@@ -447,13 +449,15 @@ The first condition in the rule which is met will be the one which is used to ca
 In granular rules, it is possible to set a default value which will be used if no conditions are met.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
-  "conditions": [{
-    // ..
-  }],
-  "default": 2.5
+  conditions: [
+    {
+      // ..
+    },
+  ],
+  default: 2.5,
 };
 
 /**
@@ -468,15 +472,15 @@ In such a setup as seen above, if no conditions are met, the result will be `2.5
 
 There are three (3) types of conditions which can be used in a rule:
 
- - `all` - All criteria in the condition must be met
- - `any` - Any criteria in the condition must be met
- - `none` - No criteria in the conditions must be met (none === !all)
+- `all` - All criteria in the condition must be met
+- `any` - Any criteria in the condition must be met
+- `none` - No criteria in the conditions must be met (none === !all)
 
 Condition types can be mixed and matched or nested to create complex rules.
 
 ### Criteria With Nested Properties
 
-In some cases, the criteria which is used to evaluate a rule might be more complex objects with nested properties. 
+In some cases, the criteria which is used to evaluate a rule might be more complex objects with nested properties.
 
 For example, we might want to evaluate a rule against a `User` object which has a `profile` property which contains
 the user's profile information.
@@ -484,20 +488,22 @@ the user's profile information.
 To do so, we can use the `.` (dot) notation to access nested properties in the criteria.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
-  "conditions": [{
-    "field": "profile.age",
-    "operator": ">=",
-    "value": 18
-  }]
+  conditions: [
+    {
+      field: "profile.age",
+      operator: ">=",
+      value: 18,
+    },
+  ],
 };
 
 const criteria = {
   profile: {
-    age: 20
-  }
+    age: 20,
+  },
 };
 
 /**
@@ -511,28 +517,29 @@ let result = RulePilot.evaluate(rule, criteria);
 Multiple criteria can be evaluated against a rule at once by passing an array of criteria to the `evaluate()` method.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
-  "conditions": {
-    "any":{
-      "field": "profile.age",
-      "operator": ">=",
-      "value": 18
-    }}
+  conditions: {
+    any: {
+      field: "profile.age",
+      operator: ">=",
+      value: 18,
+    },
+  },
 };
 
 const criteria = [
   {
     profile: {
-      age: 20
-    }
+      age: 20,
+    },
   },
   {
     profile: {
-      age: 17
-    }
-  }
+      age: 17,
+    },
+  },
 ];
 
 /**
@@ -545,15 +552,15 @@ let result = RulePilot.evaluate(rule, criteria);
 
 of the rule to ensure it is valid and properly structured.
 
-The `validate()` method will return `true` if the rule is valid, otherwise it will return an error message 
+The `validate()` method will return `true` if the rule is valid, otherwise it will return an error message
 describing the problem along with the problem node from the rule for easy debugging.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
-    // ...
-}
+  // ...
+};
 
 const result = RulePilot.validate(rule);
 ```
@@ -561,18 +568,18 @@ const result = RulePilot.validate(rule);
 For TypeScript users, the `ValidationResult` interface can be imported.
 
 ```typescript
-import { RulePilot, Rule, ValidationResult } from 'rulepilot';
+import { RulePilot, Rule, ValidationResult } from "rulepilot";
 
 const rule: Rule = {
-    // ...
-}
+  // ...
+};
 
 const validationResult: ValidationResult = RulePilot.validate(rule);
 ```
 
 ## Fluent Rule Builder
 
-Although creating rules in plain JSON is very straightforward, `RulePilot` comes with a `Builder` class which can be 
+Although creating rules in plain JSON is very straightforward, `RulePilot` comes with a `Builder` class which can be
 used to create rules in a fluent manner.
 
 The `add()` method allows for the addition of a root condition to the rule. This condition can be then setup as required.
@@ -580,7 +587,7 @@ The `add()` method allows for the addition of a root condition to the rule. This
 The `default()` method allows for the addition of a default value result for the rule.
 
 ```typescript
-import { RulePilot, Rule } from 'rulepilot';
+import { RulePilot, Rule } from "rulepilot";
 
 const b = RulePilot.builder();
 

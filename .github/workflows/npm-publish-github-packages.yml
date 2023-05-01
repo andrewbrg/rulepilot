@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 16
           registry-url: https://npm.pkg.github.com/
-          scope: '@andrewbrg'
+          scope: "@andrewbrg"
       - run: npm config set registry https://npm.pkg.github.com
       - run: npm publish
         env:
