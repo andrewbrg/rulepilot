@@ -79,7 +79,7 @@ import { RulePilot } from "rulepilot";
 let result;
 
 // Static
- esult = await RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate(rule, criteria);
 
 // Instance
 const rulePilot = new RulePilot();
@@ -686,7 +686,7 @@ rulePilot.clearMutationCache();
 
 ### Debugging Mutations
 
-Mutations can be debugged by setting an environment variable `DEBUG` to `true` when running `RulePilot`. This will 
+Mutations can be debugged by setting an environment variable `DEBUG="true"` when running `RulePilot`. This will 
 cause mutations to log debug information to the console.
 
 ## Fluent Rule Builder
