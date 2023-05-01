@@ -1,6 +1,6 @@
 <img src=".github/logo.png" width="190" alt="RulePilot" />
 
-[![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot)
+[![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot?v1.1.2)
 
 | Statements                                                                  | Functions                                                                  | Lines                                                                  |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
