@@ -90,19 +90,27 @@ export class Mutator {
    * Checks if the criteria contains any mutate-able properties.
    * @param criteria The criteria to check.
    * @param result Whether a mutate-able property has been found.
+   * @param parentPath The parent path to the current property.
    */
-  private hasMutations(criteria: object, result: boolean = false): boolean {
+  private hasMutations(
+    criteria: object,
+    result: boolean = false,
+    parentPath: string = ""
+  ): boolean {
     // If we have already found a mutation, we can stop.
     if (result) return true;
 
     for (const key of Object.keys(criteria)) {
       if (result) return true;
 
+      // Prepare dotted path to the current property.
+      const path = parentPath ? `${parentPath}.${key}` : key;
+
       // If the value is an object, we should recurse.
       result =
         "object" === typeof criteria[key]
-          ? result || this.hasMutations(criteria[key], result)
-          : result || this._mutations.has(key);
+          ? result || this.hasMutations(criteria[key], result, path)
+          : result || this._mutations.has(path);
     }
 
     return result;
@@ -111,17 +119,24 @@ export class Mutator {
   /**
    * Recursively applies mutations to the criteria.
    * @param criteria The criteria to mutate.
+   * @param parentPath The parent path to the current property.
    */
-  private async applyMutations(criteria: object): Promise<void> {
+  private async applyMutations(
+    criteria: object,
+    parentPath: string = ""
+  ): Promise<void> {
     const promises = Object.keys(criteria).map(
       async (key) =>
         new Promise(async (resolve) => {
+          // Prepare dotted path to the current property.
+          const path = parentPath ? `${parentPath}.${key}` : key;
+
           if ("object" === typeof criteria[key]) {
-            await this.applyMutations(criteria[key]);
+            await this.applyMutations(criteria[key], path);
           }
 
-          if (this._mutations.has(key)) {
-            criteria[key] = await this.execCached(key, criteria);
+          if (this._mutations.has(path)) {
+            criteria[key] = await this.execMutation(key, criteria, path);
           }
 
           resolve(criteria[key]);
@@ -134,29 +149,38 @@ export class Mutator {
   /**
    * Executes a mutation.
    * Defers duplicate executions to the same object from a memory cache.
-   * @param key The key of the mutation to execute.
+   * @param criteriaProp The criteria property to execute the mutation on.
    * @param criteria The criteria to execute the mutation with.
+   * @param mutationKey The key of the mutation to execute.
    */
-  private async execCached(key: string, criteria: unknown): Promise<any> {
-    const param = criteria[key];
+  private async execMutation(
+    criteriaProp: string,
+    criteria: unknown,
+    mutationKey: string
+  ): Promise<any> {
+    const value = criteria[criteriaProp];
 
     // Create a cache key
-    const cacheKey = `${key}${createHash("md5")
-      .update(param.toString())
+    const cacheKey = `${mutationKey}${createHash("md5")
+      .update(value.toString())
       .digest("hex")}`;
 
     // If the mutation has already been executed, return the cached result.
     if (this._cache.has(cacheKey)) {
-      Logger.debug(`Cache hit on "${key}" with param "${param}"`);
+      Logger.debug(`Cache hit on "${mutationKey}" with param "${value}"`);
       return this._cache.get(cacheKey);
     }
 
     // If the mutation is already in progress, wait for it to finish.
     if (this._buffer.get(cacheKey)) {
       return await new Promise((resolve) => {
-        Logger.debug(`Waiting on mutation "${key}" with param "${param}"`);
+        Logger.debug(
+          `Waiting on mutation "${mutationKey}" with param "${value}"`
+        );
         this._eventEmitter.once(`mutation:${cacheKey}`, (result) => {
-          Logger.debug(`Resolved mutation "${key}" with param "${param}"`);
+          Logger.debug(
+            `Resolved mutation "${mutationKey}" with param "${value}"`
+          );
           resolve(result);
         });
       });
@@ -167,9 +191,9 @@ export class Mutator {
     this._buffer.set(cacheKey, true);
 
     // Execute the mutation
-    Logger.debug(`Running mutation "${key}" with param "${param}"`);
-    const mutation = this._mutations.get(key);
-    const result = await mutation(param, criteria);
+    Logger.debug(`Running mutation "${mutationKey}" with param "${value}"`);
+    const mutation = this._mutations.get(mutationKey);
+    const result = await mutation(value, criteria);
 
     // Cache the result and release the buffer to false.
     this._cache.set(cacheKey, result);

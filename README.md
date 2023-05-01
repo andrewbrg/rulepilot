@@ -661,7 +661,6 @@ objects will be updated with the account information before the rule is evaluate
 
 ### Important Notes About Mutations
 
-- Current limitation is that mutations can only be defined for root level criteria properties
 - Mutations are only called once per unique criteria value
 - Multiple mutations are called in parallel, not sequentially (for performance reasons)
 - Mutations are cached by default, so if the same criteria value is encountered again, the mutation will not be called
@@ -688,6 +687,10 @@ rulePilot.clearMutationCache();
 
 Mutations can be debugged by setting an environment variable `DEBUG="true"` when running `RulePilot`. This will 
 cause mutations to log debug information to the console.
+
+```typescript
+process.env.DEBUG = "true";
+```
 
 ## Fluent Rule Builder
 

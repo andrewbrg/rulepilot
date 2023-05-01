@@ -74,6 +74,22 @@ describe("RulePilot mutator correctly", () => {
     ).toEqual(3);
   });
 
+  it("Performs nested mutation", async () => {
+    rp.addMutation("foo.bar", (value) => value * 2);
+    expect(
+      await rp.evaluate(
+        {
+          conditions: [
+            {
+              all: [{ field: "foo.bar", operator: ">", value: 6 }],
+            },
+          ],
+        },
+        { foo: { bar: 5 } }
+      )
+    ).toEqual(true);
+  });
+
   it("Caches async mutation results", async () => {
     rp.addMutation("Leverage", (value) => value);
     rp.addMutation("CountryIso", mutation1);

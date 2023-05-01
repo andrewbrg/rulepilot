@@ -1,7 +1,7 @@
 {
   "name": "rulepilot",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Rule parsing engine for JSON rules",
   "main": "src/index.ts",
   "scripts": {
