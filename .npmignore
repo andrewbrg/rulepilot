@@ -3,7 +3,6 @@
 .vscode
 
 # Other
-
 .github
 coverage
 node_modules
