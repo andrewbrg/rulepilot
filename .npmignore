@@ -1,0 +1,15 @@
+# IDEs
+.idea
+.vscode
+
+# Other
+
+.github
+coverage
+node_modules
+src
+test
+
+.gitignore
+.npmrc
+prettier.json
