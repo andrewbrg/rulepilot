@@ -1,5 +1,5 @@
 {
-  "name": "rulepilot",
+  "name": "@andrewbrg/rulepilot",
   "version": "1.1.8",
   "description": "Rule parsing engine for JSON rules",
   "main": "dist/index.js",
