@@ -1,8 +1,9 @@
 {
   "name": "rulepilot",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Rule parsing engine for JSON rules",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "badges": "jest-badges-readme",
     "test": "jest --testPathPattern=test --color --forceExit",

@@ -12,3 +12,5 @@ test
 .gitignore
 .npmrc
 prettier.json
+tsconfig.json
+yarn.lock
