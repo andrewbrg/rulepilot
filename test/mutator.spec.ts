@@ -5,8 +5,6 @@ import { RulePilot } from "../src";
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
 
-let rp: RulePilot;
-
 const mutation1 = async (value) => {
   const result = await axios.get(
     `https://restcountries.com/v3.1/name/${value}?fullText=true`
@@ -41,12 +39,13 @@ const criteria = [
 
 describe("RulePilot mutator correctly", () => {
   beforeEach(() => {
-    rp = new RulePilot();
     console.debug = jest.fn();
     process.env.DEBUG = "true";
   });
 
   it("Performs desired mutation", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("ProfitPercentage", (value) => value * 2);
     expect(await rp.evaluate(valid1Json, { ProfitPercentage: 5 })).toEqual(
       true
@@ -54,6 +53,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Performs multiple mutations", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("WinRate", (value) => value * 2);
     rp.addMutation("AverageTradeDuration", (value) => value / 2);
 
@@ -68,6 +69,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Performs async mutation", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("CountryIso", mutation1);
 
     expect(
@@ -83,6 +86,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Performs nested mutation", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("foo.bar", (value) => value * 2);
     expect(
       await rp.evaluate(
@@ -99,6 +104,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Caches async mutation results", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("Leverage", (value) => value);
     rp.addMutation("CountryIso", mutation1);
 
@@ -112,6 +119,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Performs a migration with an array parameter", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("CountryIso", mutation2);
 
     const result = await rp.evaluate(
@@ -129,6 +138,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Performs a migration with a nested array parameter", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("foo.bar", mutation2);
 
     const result = await rp.evaluate(
@@ -146,6 +157,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Mutation cache works properly", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("Leverage", (value) => value);
     rp.addMutation("CountryIso", mutation1);
 
@@ -161,6 +174,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Removes a mutation properly", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("CountryIso", mutation1);
     rp.removeMutation("CountryIso");
 
@@ -175,6 +190,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Clears mutation cache properly", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("CountryIso", mutation1);
 
     await rp.evaluate(valid3Json, {
@@ -198,6 +215,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Clears all mutation cache properly", async () => {
+    const rp = new RulePilot();
+
     rp.addMutation("CountryIso", mutation1);
 
     await rp.evaluate(valid3Json, {
@@ -221,6 +240,8 @@ describe("RulePilot mutator correctly", () => {
   });
 
   it("Static methods behave as expected", async () => {
+    const rp = new RulePilot();
+
     RulePilot.addMutation("CountryIso", mutation1);
 
     const result1 = await RulePilot.evaluate(valid3Json, {

@@ -12,24 +12,14 @@ export interface Constraint {
     | (string | number | boolean | object)[];
 }
 
-export interface Condition {
-  any?: (Constraint | Condition)[];
-  all?: (Constraint | Condition)[];
-  none?: (Constraint | Condition)[];
-  result?:
-    | string
-    | number
-    | boolean
-    | object
-    | (string | number | boolean | object)[];
+export interface Condition<R = any> {
+  any?: (Constraint | Condition<R>)[];
+  all?: (Constraint | Condition<R>)[];
+  none?: (Constraint | Condition<R>)[];
+  result?: R;
 }
 
-export interface Rule {
-  conditions: Condition | Condition[];
-  default?:
-    | string
-    | number
-    | boolean
-    | object
-    | (string | number | boolean | object)[];
+export interface Rule<R = any> {
+  conditions: Condition<R> | Condition<R>[];
+  default?: R;
 }
