@@ -20,6 +20,17 @@ export class Validator {
     // Assume the rule is valid.
     let result: ValidationResult = { isValid: true };
 
+    // Check the rule is a valid JSON
+    if (!this.objectDiscovery.isObject(rule)) {
+      return {
+        isValid: false,
+        error: {
+          message: "The rule must be a valid JSON object.",
+          element: rule,
+        },
+      };
+    }
+
     // Cater for the case where the conditions property is not an array.
     const conditions =
       rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
@@ -67,6 +78,17 @@ export class Validator {
 
     // Set the type of condition.
     const type = this.objectDiscovery.conditionType(condition);
+
+    // Check if the condition is iterable
+    if(!Array.isArray(condition[type])) {
+      return {
+        isValid: false,
+        error: {
+          message: `The condition '${type}' should be iterable.`,
+          element: condition,
+        },
+      };
+    }
 
     // Validate each item in the condition.
     for (const node of condition[type]) {
