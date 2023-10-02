@@ -108,7 +108,7 @@ describe("RulePilot validator correctly", () => {
     );
   });
 
-  it("Identifies invalid values for In/Not In operators", () => {
+  it("Identifies invalid values for In/NotIn/ContainsAny operators", () => {
     expect(
       RulePilot.validate({
         conditions: [
@@ -121,6 +121,14 @@ describe("RulePilot validator correctly", () => {
       RulePilot.validate({
         conditions: [
           { all: [{ field: "name", operator: "not in", value: "test" }] },
+        ],
+      }).isValid
+    ).toEqual(false);
+
+    expect(
+      RulePilot.validate({
+        conditions: [
+          { all: [{ field: "name", operator: "contains any", value: "test" }] },
         ],
       }).isValid
     ).toEqual(false);

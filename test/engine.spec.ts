@@ -4,6 +4,7 @@ import { valid1Json } from "./rulesets/valid1.json";
 import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { valid4Json } from "./rulesets/valid4.json";
+import { valid5Json } from "./rulesets/valid5.json";
 
 import { invalid1Json } from "./rulesets/invalid1.json";
 
@@ -187,5 +188,27 @@ describe("RulePilot engine correctly", () => {
         Foo: 10,
       })
     ).toEqual(true);
+  });
+
+  it("Evaluates a simple ruleset with a Contains and ContainsAny any condition", async () => {
+    expect(
+      await RulePilot.evaluate(valid5Json, { countries: ["US", "FR"] })
+    ).toEqual(true);
+
+    expect(
+      await RulePilot.evaluate(valid5Json, { countries: ["GB", "DE"] })
+    ).toEqual(false);
+
+    expect(
+      await RulePilot.evaluate(valid5Json, { states: ["CA", "TN"] })
+    ).toEqual(true);
+
+    expect(
+      await RulePilot.evaluate(valid5Json, { states: ["NY", "WI"] })
+    ).toEqual(false);
+
+    expect(
+      await RulePilot.evaluate(valid5Json, { states: "invalid criterion type" })
+    ).toEqual(false);
   });
 });

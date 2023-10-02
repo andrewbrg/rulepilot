@@ -151,7 +151,7 @@ export class Validator {
       };
     }
 
-    const operators = ["==", "!=", ">", "<", ">=", "<=", "in", "not in"];
+    const operators: Operator[] = ["==", "!=", ">", "<", ">=", "<=", "in", "not in", "contains", "contains any"];
     if (!operators.includes(constraint.operator as Operator)) {
       return {
         isValid: false,
@@ -164,14 +164,14 @@ export class Validator {
 
     // We must check that the value is an array if the operator is 'in' or 'not in'.
     if (
-      ["in", "not in"].includes(constraint.operator) &&
+      ["in", "not in", "contains any"].includes(constraint.operator) &&
       !Array.isArray(constraint.value)
     ) {
       return {
         isValid: false,
         error: {
           message:
-            'Constraint "value" must be an array if the "operator" is "in" or "not in"',
+            'Constraint "value" must be an array if the "operator" is "in", "not in", or "contains any"',
           element: constraint,
         },
       };
