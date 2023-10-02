@@ -35,7 +35,7 @@ each condition's evaluation.
 - Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, `Contains`, and `ContainsAny` operators
-,
+
 ## Usage
 
 ### Installation
