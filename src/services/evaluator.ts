@@ -138,6 +138,16 @@ export class Evaluator {
           !Array.isArray(constraint.value) ||
           !constraint.value.includes(criterion as never)
         );
+      case "contains":
+        return (
+          Array.isArray(criterion) &&
+          criterion.includes(constraint.value)
+        );
+      case "contains any":
+        return (
+          Array.isArray(constraint.value) &&
+          constraint.value.some(x => criterion.includes(x))
+        );
       default:
         return false;
     }

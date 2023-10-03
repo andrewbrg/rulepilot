@@ -34,7 +34,7 @@ each condition's evaluation.
 - Supports Criteria objects with nested properties
 - Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
-- Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, and `NotIn` operators
+- Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, `Contains`, and `ContainsAny` operators
 
 ## Usage
 
@@ -500,6 +500,21 @@ There are three (3) types of conditions which can be used in a rule:
 - `none` - No criteria in the conditions must be met (none === !all)
 
 Condition types can be mixed and matched or nested to create complex rules.
+
+#### Operators
+
+These are the operators available for a constraint and how they are used:
+
+- `==`: Applies JavaScript equality (`==`) operator to criterion and constraint value
+- `!=`: Applies JavaScript inequality (`!=`) operator to criterion and constraint value
+- `>`: Applies JavaScript greather than (`>`) operator to criterion and constraint value
+- `<`: Applies JavaScript less than (`<`) operator to criterion and constraint value
+- `>=`: Applies JavaScript greater than or equal (`>=`) operator to criterion and constraint value
+- `<=`: Applies JavaScript less than or equal (`<=`) operator to criterion and constraint value
+- `in`: Tests if the criterion is an element of the constraint value (value must be an array)
+- `not in`: Tests if the criterion is not an element of the constraint value (value must be an array)
+- `contains`: Tests if the constraint value is an element of the criterion (criterion must be an array)
+- `contains any`: Tests if any element in the constraint value is an element of the criterion (criterion and constraint value must be an array)
 
 ### Criteria With Nested Properties
 

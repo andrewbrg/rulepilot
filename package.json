@@ -1,12 +1,12 @@
 {
   "name": "rulepilot",
-  "version": "1.1.12",
+  "version": "1.2.0",
   "description": "Rule parsing engine for JSON rules",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "badges": "jest-badges-readme",
-    "test": "jest --testPathPattern=test --color --forceExit",
+    "test": "jest --testPathPattern=test --detectOpenHandles --color --forceExit",
     "build": "rm -rf dist && tsc",
     "prettier": "prettier --write ."
   },
