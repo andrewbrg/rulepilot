@@ -1,9 +1,10 @@
 import { Builder } from "./builder";
 import { Mutator } from "./mutator";
 import { Evaluator } from "./evaluator";
+import { Introspector } from "./Introspector";
 import { ValidationResult, Validator } from "./validator";
 
-import { Rule } from "../types/rule";
+import { CriteriaRange, Rule } from "../types/rule";
 import { RuleError } from "../types/error";
 
 export class RulePilot {
@@ -12,6 +13,7 @@ export class RulePilot {
   private _mutator: Mutator = new Mutator();
   private _validator: Validator = new Validator();
   private _evaluator: Evaluator = new Evaluator();
+  private _introspector: Introspector = new Introspector();
 
   /**
    * Returns a rule builder class instance.
@@ -66,7 +68,7 @@ export class RulePilot {
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
-   * @throws Error if the rule is invalid.
+   * @throws RuleError if the rule is invalid.
    */
   async evaluate<T>(
     rule: Rule,
@@ -81,6 +83,24 @@ export class RulePilot {
     }
 
     return this._evaluator.evaluate(rule, await this._mutator.mutate(criteria));
+  }
+
+  /**
+   * Given a rule, checks the constraints and conditions to determine
+   * the possible range of input criteria which would be satisfied by the rule.
+   *
+   * @param rule The rule to evaluate.
+   * @throws RuleError if the rule is invalid
+   * @throws RuleTypeError if the rule is not granular
+   */
+  determineCriteriaRange<T>(rule: Rule): CriteriaRange<T>[] {
+    // Before we proceed with the rule, we should validate it.
+    const validationResult = this.validate(rule);
+    if (!validationResult.isValid) {
+      throw new RuleError(validationResult);
+    }
+
+    return this._introspector.determineCriteriaRange<T>(rule);
   }
 
   /**
@@ -113,7 +133,7 @@ export class RulePilot {
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
-   * @throws Error if the rule is invalid.
+   * @throws RuleError if the rule is invalid.
    */
   static async evaluate<T>(
     rule: Rule,
@@ -121,6 +141,18 @@ export class RulePilot {
     trustRule = false
   ): Promise<T> {
     return RulePilot._rulePilot.evaluate<T>(rule, criteria, trustRule);
+  }
+
+  /**
+   * Given a rule, checks the constraints and conditions to determine
+   * the possible range of input criteria which would be satisfied by the rule.
+   *
+   * @param rule The rule to evaluate.
+   * @throws RuleError if the rule is invalid
+   * @throws RuleTypeError if the rule is not granular
+   */
+  static determineCriteriaRange<T>(rule: Rule): CriteriaRange<T>[] {
+    return RulePilot._rulePilot.determineCriteriaRange<T>(rule);
   }
 
   /**

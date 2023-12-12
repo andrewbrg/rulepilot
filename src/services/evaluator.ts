@@ -74,7 +74,7 @@ export class Evaluator {
 
     // Check each node in the condition.
     for (const node of condition[type]) {
-      let fn;
+      let fn: string;
       if (this._objectDiscovery.isCondition(node)) {
         fn = "evaluateCondition";
       }
@@ -139,14 +139,11 @@ export class Evaluator {
           !constraint.value.includes(criterion as never)
         );
       case "contains":
-        return (
-          Array.isArray(criterion) &&
-          criterion.includes(constraint.value)
-        );
+        return Array.isArray(criterion) && criterion.includes(constraint.value);
       case "contains any":
         return (
           Array.isArray(constraint.value) &&
-          constraint.value.some(x => criterion.includes(x))
+          constraint.value.some((x) => criterion.includes(x))
         );
       default:
         return false;
