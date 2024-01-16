@@ -15,11 +15,10 @@ export class Introspector {
    * Given a rule, checks the constraints and conditions to determine
    * the possible range of input criteria which would be satisfied by the rule.
    * The rule must be a granular rule to be introspected.
-   *
    * @param rule The rule to evaluate.
    * @throws RuleTypeError if the rule is not granular
    */
-  determineCriteriaRange<T>(rule: Rule): CriteriaRange<T>[] {
+  introspect<T>(rule: Rule): CriteriaRange<T>[] {
     // The ruleset needs to be granular for this operation to work
     if (!this._objectDiscovery.isGranular(rule)) {
       throw new RuleTypeError(

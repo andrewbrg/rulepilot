@@ -100,7 +100,7 @@ export class RulePilot {
       throw new RuleError(validationResult);
     }
 
-    return this._introspector.determineCriteriaRange<T>(rule);
+    return this._introspector.introspect<T>(rule);
   }
 
   /**
