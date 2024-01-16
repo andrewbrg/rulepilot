@@ -18,8 +18,8 @@ export interface Constraint {
     | string
     | number
     | boolean
-    | object
-    | (string | number | boolean | object)[];
+    | Record<string, unknown>
+    | (string | number | boolean | Record<string, unknown>)[];
 }
 
 export interface Condition<R = any> {
@@ -36,5 +36,6 @@ export interface Rule<R = any> {
 
 export interface CriteriaRange<R = any> {
   type: R;
-  options: object[];
+  options?: Record<string, unknown>[];
+  isDefault: boolean;
 }

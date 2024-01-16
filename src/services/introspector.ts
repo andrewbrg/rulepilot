@@ -49,6 +49,7 @@ export class Introspector {
       criteriaRange.push({
         type: result,
         options: [],
+        isDefault: false,
       });
     }
     // Assign the default result to the criteria range
@@ -56,29 +57,25 @@ export class Introspector {
       criteriaRange.push({
         type: rule.default,
         options: null,
+        isDefault: true,
       });
     }
-
-    // Next we need to understand all the fields used across all constraints and create a set of them
-    const fields = this.findUniqueConstraintFields(conditions);
 
     // For we need to populate each item in the `criteriaRange` with
     // the possible range of input values (in the criteria) which
     // would resolve to the given result. Rules are recursive.
-    return this.resolveCriteriaRanges(criteriaRange, conditionMap, fields);
+    return this.resolveCriteriaRanges(criteriaRange, conditionMap);
   }
 
   /**
    * Populates the criteria range options with the possible range of input values
    * @param criteriaRanges The criteria range to populate.
    * @param conditionMap The map of results to conditions.
-   * @param fields The set of fields to populate the criteria range with.
    * @param parentType The current recursion depth.
    */
   private resolveCriteriaRanges<T>(
     criteriaRanges: CriteriaRange<T>[],
     conditionMap: Map<T, Condition[]>,
-    fields: Set<string>,
     parentType: ConditionType = null
   ): CriteriaRange<T>[] {
     // For each set of conditions which produce the same result
@@ -106,7 +103,6 @@ export class Introspector {
             criteriaRangeItem = this.resolveCriteriaRanges<T>(
               [criteriaRangeItem],
               new Map<T, Condition[]>([[result, [condition]]]),
-              fields,
               type
             ).pop();
           }
@@ -258,16 +254,10 @@ export class Introspector {
       case "<":
       case ">=":
       case "<=":
-        value = { operator: constraint.operator, value: constraint.value };
-        break;
       case "not in":
-        value = constraint.value;
-        break;
       case "contains":
-        value = constraint.value;
-        break;
       case "contains any":
-        value = constraint.value;
+        value = { operator: constraint.operator, value: constraint.value };
         break;
     }
 
@@ -277,7 +267,7 @@ export class Introspector {
   }
 
   /**
-   * todo bugged should not use last index or root but all indexes
+   * todo bugged
    * Adds an option to a criteria range entry based on the condition type and parent type.
    * @param currentType The current condition type.
    * @param parentType The type of the parent condition.
@@ -313,39 +303,5 @@ export class Introspector {
 
     entry.options.push(option);
     return entry;
-  }
-
-  /**
-   * Given a list of conditions, returns a set of all the unique fields used in constraints.
-   * @param conditions The conditions to search.
-   * @param fields The set of fields to add to.
-   */
-  private findUniqueConstraintFields(
-    conditions: Condition[],
-    fields: Set<string> = new Set()
-  ): Set<string> {
-    for (const condition of conditions) {
-      const type = this._objectDiscovery.conditionType(condition);
-      if (!type) {
-        continue;
-      }
-
-      // Iterate over each property of the condition
-      for (const node of condition[type]) {
-        if (this._objectDiscovery.isConstraint(node)) {
-          const constraint = node as Constraint;
-          constraint.field && fields.add(constraint.field);
-        }
-
-        if (this._objectDiscovery.isCondition(node)) {
-          const condition = node as Condition;
-          this.findUniqueConstraintFields([condition], fields).forEach((f) =>
-            fields.add(f)
-          );
-        }
-      }
-    }
-
-    return fields;
   }
 }
