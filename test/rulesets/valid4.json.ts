@@ -1,14 +1,24 @@
-import { Condition, Rule } from "../../src";
+import { Rule } from "../../src";
 
 export const valid4Json: Rule = {
   conditions: [
     {
       any: [
         {
+          field: "Leverage",
+          operator: "==",
+          value: 1000,
+        },
+        {
+          field: "Leverage",
+          operator: "==",
+          value: 500,
+        },
+        {
           all: [
             {
               field: "CountryIso",
-              operator: "in",
+              operator: "contains",
               value: ["GB", "FI"],
             },
             {
@@ -21,12 +31,49 @@ export const valid4Json: Rule = {
               operator: "==",
               value: "Real",
             },
+            {
+              any: [
+                {
+                  field: "Category",
+                  operator: ">=",
+                  value: 1000,
+                },
+                {
+                  field: "Category",
+                  operator: "==",
+                  value: 22,
+                },
+                {
+                  any: [
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 11,
+                    },
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 12,
+                    },
+                    {
+                      all: [
+                        {
+                          field: "dd",
+                          operator: "==",
+                          value: 121,
+                        },
+                        {
+                          field: "ss",
+                          operator: "==",
+                          value: 122,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
           ],
-        },
-        {
-          field: "Leverage",
-          operator: ">=",
-          value: 1000,
         },
       ],
       result: 3,
@@ -41,9 +88,6 @@ export const valid4Json: Rule = {
       ],
       result: 4,
     },
-    {
-      foo: "bar",
-    } as Condition,
   ],
   default: 2,
 };

@@ -3,10 +3,10 @@ import { RulePilot, Operator, RuleError } from "../src";
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
-import { valid4Json } from "./rulesets/valid4.json";
 import { valid5Json } from "./rulesets/valid5.json";
 
 import { invalid1Json } from "./rulesets/invalid1.json";
+import { invalid2Json } from "./rulesets/invalid2.json";
 
 describe("RulePilot engine correctly", () => {
   it("Evaluates a simple ruleset", async () => {
@@ -162,12 +162,12 @@ describe("RulePilot engine correctly", () => {
   });
 
   it("Evaluates a simple ruleset with redundant condition", async () => {
-    expect(await RulePilot.evaluate(valid4Json, { foo: true }, true)).toEqual(
+    expect(await RulePilot.evaluate(invalid2Json, { foo: true }, true)).toEqual(
       2
     );
 
     expect(
-      await RulePilot.evaluate(valid4Json, { Category: "Islamic" }, true)
+      await RulePilot.evaluate(invalid2Json, { Category: "Islamic" }, true)
     ).toEqual(4);
   });
 

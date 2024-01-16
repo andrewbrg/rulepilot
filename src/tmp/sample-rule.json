@@ -1,0 +1,227 @@
+{
+  "conditions": [
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "regular",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "1",
+          "operator": "=="
+        },
+        {
+          "any": [
+            {
+              "field": "leverages",
+              "value": "100",
+              "operator": "=="
+            },
+            {
+              "field": "leverages",
+              "value": "300",
+              "operator": "=="
+            }
+          ]
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 103
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "regular",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "2",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 103
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "regular",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "3",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-PRPFUN-USD",
+        "spreadPlan": "FPR-PRPFUN",
+        "groupId": 101
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "trial",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "10",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 103
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "swing",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "2",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 10863896
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "swing",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "3",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-PRPFUN-USD",
+        "spreadPlan": "FPR-PRPFUN",
+        "groupId": 10863895
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "swing",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "1",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 10863896
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "regular",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "0",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 103
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "plus",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "3",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-PRPFUN-USD",
+        "spreadPlan": "FPR-PRPFUN",
+        "groupId": 10871663
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "plus",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "1",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 10871665
+      }
+    },
+    {
+      "all": [
+        {
+          "field": "category",
+          "value": "plus",
+          "operator": "=="
+        },
+        {
+          "field": "stage",
+          "value": "2",
+          "operator": "=="
+        }
+      ],
+      "result": {
+        "commissionPlan": "FPR-GEN-USD",
+        "spreadPlan": "FPR-GEN",
+        "groupId": 10871665
+      }
+    }
+  ]
+}

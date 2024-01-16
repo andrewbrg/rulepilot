@@ -1,7 +1,7 @@
 import { Builder } from "./builder";
 import { Mutator } from "./mutator";
 import { Evaluator } from "./evaluator";
-import { Introspector } from "./Introspector";
+import { Introspector } from "./introspector";
 import { ValidationResult, Validator } from "./validator";
 
 import { CriteriaRange, Rule } from "../types/rule";
@@ -147,7 +147,7 @@ export class RulePilot {
    * Given a rule, checks the constraints and conditions to determine
    * the possible range of input criteria which would be satisfied by the rule.
    *
-   * @param rule The rule to evaluate.
+   * @param rule The rule to introspect.
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
