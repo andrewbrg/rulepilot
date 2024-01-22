@@ -8,8 +8,17 @@ import {
 import { RuleTypeError } from "../types/error";
 import { ObjectDiscovery } from "./object-discovery";
 
+interface IntrospectionStep {
+  currentType: ConditionType;
+  parentType?: ConditionType;
+  depth: number;
+  option: Record<string, unknown>;
+}
+
 export class Introspector {
   private _objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
+
+  private _introspectionSteps: IntrospectionStep[] = [];
 
   /**
    * Given a rule, checks the constraints and conditions to determine
@@ -70,12 +79,14 @@ export class Introspector {
    * Populates the criteria range options with the possible range of input values
    * @param criteriaRanges The criteria range to populate.
    * @param conditionMap The map of results to conditions.
-   * @param parentType The current recursion depth.
+   * @param parentType The type of the parent condition.
+   * @param depth The current recursion depth.
    */
   private resolveCriteriaRanges<T>(
     criteriaRanges: CriteriaRange<T>[],
     conditionMap: Map<T, Condition[]>,
-    parentType: ConditionType = null
+    parentType: ConditionType = null,
+    depth: number = 0
   ): CriteriaRange<T>[] {
     // For each set of conditions which produce the same result
     for (const [result, conditions] of conditionMap) {
@@ -92,6 +103,7 @@ export class Introspector {
         criteriaRangeItem = this.populateCriteriaRangeOptions<T>(
           criteriaRangeItem,
           condition,
+          depth,
           parentType
         );
 
@@ -102,7 +114,8 @@ export class Introspector {
             criteriaRangeItem = this.resolveCriteriaRanges<T>(
               [criteriaRangeItem],
               new Map<T, Condition[]>([[result, [condition]]]),
-              type
+              type,
+              depth + 1
             ).pop();
           }
 
@@ -121,11 +134,13 @@ export class Introspector {
    * Updates a criteria range entry based on the constraint and condition type.
    * @param criteriaRange The criteria range entry to update.
    * @param condition The condition to update the criteria range entry with.
-   * @param parentType The current recursion depth.
+   * @param depth The current recursion depth.
+   * @param parentType The type of the parent condition.
    */
   private populateCriteriaRangeOptions<T>(
     criteriaRange: CriteriaRange<T>,
     condition: Condition,
+    depth: number,
     parentType?: ConditionType
   ): CriteriaRange<T> {
     const type = this._objectDiscovery.conditionType(condition);
@@ -152,7 +167,8 @@ export class Introspector {
             type,
             parentType,
             criteriaRange,
-            option
+            option,
+            depth
           ))
       );
     }
@@ -170,7 +186,8 @@ export class Introspector {
           }
 
           return prev;
-        }, {})
+        }, {}),
+        depth
       );
     }
 
@@ -272,24 +289,40 @@ export class Introspector {
    * @param parentType The type of the parent condition.
    * @param entry The criteria range entry to update.
    * @param option The option to update the criteria range entry with.
+   * @param depth The current recursion depth.
    */
   private addOptionToCriteriaRange<T>(
     currentType: ConditionType,
     parentType: ConditionType,
     entry: CriteriaRange<T>,
-    option: Record<string, unknown>
+    option: Record<string, unknown>,
+    depth: number
   ): CriteriaRange<T> {
     const lastIdx = entry.options.length - 1;
 
+    // console.log(currentType, parentType, depth);
+
+    // We create new objects in the options array
     if (currentType === "all" && parentType === "any") {
+      this._introspectionSteps.push({
+        currentType,
+        parentType,
+        depth,
+        option,
+      });
+      // console.log(
+      //   this._introspectionSteps[this._introspectionSteps.length - 1]
+      // );
+
       entry.options.push(option);
       return entry;
     }
 
+    // We add these options onto the last object in the options array
     if (
       (currentType === "any" && parentType === "any") ||
-      (currentType === "all" && parentType === "all") ||
-      (currentType === "any" && parentType === "all")
+      (currentType === "any" && parentType === "all") ||
+      (currentType === "all" && parentType === "all")
     ) {
       for (const [key, value] of Object.entries(option)) {
         entry.options[lastIdx][key] = entry.options[lastIdx].hasOwnProperty(key)
@@ -297,8 +330,26 @@ export class Introspector {
           : value;
       }
 
+      this._introspectionSteps.push({
+        currentType,
+        parentType,
+        depth,
+        option: entry.options[lastIdx],
+      });
+      // console.log(
+      //   this._introspectionSteps[this._introspectionSteps.length - 1]
+      // );
+
       return entry;
     }
+
+    this._introspectionSteps.push({
+      currentType,
+      parentType,
+      depth,
+      option,
+    });
+    // console.log(this._introspectionSteps[this._introspectionSteps.length - 1]);
 
     entry.options.push(option);
     return entry;
