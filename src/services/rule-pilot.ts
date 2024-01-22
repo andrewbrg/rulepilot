@@ -93,7 +93,7 @@ export class RulePilot {
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  determineCriteriaRange<T>(rule: Rule): CriteriaRange<T>[] {
+  introspect<T>(rule: Rule): CriteriaRange<T>[] {
     // Before we proceed with the rule, we should validate it.
     const validationResult = this.validate(rule);
     if (!validationResult.isValid) {
@@ -151,8 +151,8 @@ export class RulePilot {
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  static determineCriteriaRange<T>(rule: Rule): CriteriaRange<T>[] {
-    return RulePilot._rulePilot.determineCriteriaRange<T>(rule);
+  static introspect<T>(rule: Rule): CriteriaRange<T>[] {
+    return RulePilot._rulePilot.introspect<T>(rule);
   }
 
   /**
