@@ -820,7 +820,9 @@ The following will be returned in the `introspection` variable:
 Each possible result that the rule can evaluate to is returned in the `results` array, along with the possible inputs
 which will result in that result in the `options` array.
 
-Each object in the `options` array is a set of criteria must be met in order for the rule to evaluate to the result.
+Each object in the `options` array is a set of criteria which must be met in order for the rule to evaluate to the 
+result, we can consider the list of objects in the `options` as an `OR` and the criteria inside each object as 
+an `AND`.
 
 Although calculating such results might seem trivial, it can be in fact be quite a complex thing to do especially when 
 dealing with complex rules with multiple nested conditions comprised of many different operators.
