@@ -57,7 +57,7 @@ export class Mutator {
   async mutate(criteria: object | object[]): Promise<object | object[]> {
     // Handles checking the mutability of a criteria object
     // If it is mutable it will be cloned, mutated and returned
-    const exec = async (criteria) => {
+    const exec = async (criteria: object | object[]) => {
       // If there are no mutations or the criteria does not contain
       // any of the mutation keys, return the criteria as is.
       if (!this.#mutations.size || !this.hasMutations(criteria)) {

@@ -101,6 +101,8 @@ export class Introspector {
           continue;
         }
 
+        Logger.debug(`\nIntrospector: Introspecting result "${result}"`);
+
         // Find the criteria range object for the result
         let criteriaRangeItem = criteriaRanges.find((c) => c.result == result);
         criteriaRangeItem = this.populateCriteriaRangeOptions<T>(
@@ -156,6 +158,10 @@ export class Introspector {
 
       const constraint = node as Constraint;
 
+      Logger.debug(
+        `Introspector: Processing "${constraint.field} (${constraint.operator})" in "${type}" condition`
+      );
+
       // Check if we already have an entry with the same field
       // and if so, update it instead of creating a new one
       let option = options.get(constraint.field) ?? {};
@@ -174,7 +180,7 @@ export class Introspector {
         );
 
         // Debug the last introspection
-        Logger.debug("Introspection step complete", this.lastStep);
+        Logger.debug("Introspector: Step complete", this.lastStep);
       });
     }
 
@@ -196,7 +202,7 @@ export class Introspector {
       );
 
       // Debug the last introspection
-      Logger.debug("Introspection step complete", this.lastStep);
+      Logger.debug("Introspector: Step complete", this.lastStep);
     }
 
     return criteriaRange;
@@ -384,11 +390,16 @@ export class Introspector {
           option: baseOption,
         });
 
+        Logger.debug(
+          `Introspector: + new option to criteria range based on last root parent"`
+        );
+
         entry.options.push(baseOption);
         return entry;
       }
 
       this.#steps.push({ parentType, currType, depth, option });
+      Logger.debug(`Introspector: + new option to criteria range`);
 
       entry.options.push(option);
       return entry;
@@ -418,10 +429,13 @@ export class Introspector {
         changes,
       });
 
+      Logger.debug(`Introspector: Updating previous option with new values"`);
+
       return entry;
     }
 
     this.#steps.push({ parentType, currType, depth, option });
+    Logger.debug(`Introspector: + new option to criteria range"`);
 
     entry.options.push(option);
     return entry;

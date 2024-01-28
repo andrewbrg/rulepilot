@@ -1,6 +1,6 @@
 export class Logger {
-  static debug(...message: any): void {
+  static debug(...opts: any[]): void {
     if (!process.env.DEBUG) return;
-    console.debug(message);
+    console.debug(...opts);
   }
 }
