@@ -1,11 +1,10 @@
 import { Builder } from "./builder";
 import { Mutator } from "./mutator";
 import { Evaluator } from "./evaluator";
-import { Introspector } from "./introspector";
-import { ValidationResult, Validator } from "./validator";
-
-import { IntrospectionResult, Rule } from "../types/rule";
 import { RuleError } from "../types/error";
+import { Introspector } from "./introspector";
+import { Validator, ValidationResult } from "./validator";
+import { Rule, IntrospectionResult } from "../types/rule";
 
 export class RulePilot {
   static #rulePilot = new RulePilot();
@@ -70,6 +69,7 @@ export class RulePilot {
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
    * @throws RuleError if the rule is invalid.
    */
+
   async evaluate<T>(
     rule: Rule,
     criteria: object | object[],

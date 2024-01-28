@@ -1,5 +1,5 @@
 import { ObjectDiscovery } from "./object-discovery";
-import { Condition, Constraint, Operator, Rule } from "../types/rule";
+import { Rule, Operator, Condition, Constraint } from "../types/rule";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -18,7 +18,7 @@ export class Validator {
    */
   validate(rule: Rule): ValidationResult {
     // Assume the rule is valid.
-    let result: ValidationResult = { isValid: true };
+    const result: ValidationResult = { isValid: true };
 
     // Check the rule is a valid JSON
     if (!this.objectDiscovery.isObject(rule)) {
@@ -71,7 +71,7 @@ export class Validator {
     depth: number = 0
   ): ValidationResult {
     // Check to see if the condition is valid.
-    let result = this.isValidCondition(condition);
+    const result = this.isValidCondition(condition);
     if (!result.isValid) {
       return result;
     }

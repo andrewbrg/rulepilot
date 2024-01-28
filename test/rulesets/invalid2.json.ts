@@ -1,4 +1,4 @@
-import { Condition, Rule } from "../../src";
+import { Rule, Condition } from "../../src";
 
 export const invalid2Json: Rule = {
   conditions: [

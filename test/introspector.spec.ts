@@ -1,5 +1,3 @@
-import { RuleError, RulePilot, RuleTypeError } from "../src";
-
 import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { valid4Json } from "./rulesets/valid4.json";
@@ -8,6 +6,8 @@ import { valid7Json } from "./rulesets/valid7.json";
 import { valid8Json } from "./rulesets/valid8.json";
 import { valid9Json } from "./rulesets/valid9.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
+
+import { RuleError, RulePilot, RuleTypeError } from "../src";
 
 describe("RulePilot introspector correctly", () => {
   it("Detects invalid rules", async () => {

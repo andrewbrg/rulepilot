@@ -1,9 +1,10 @@
 import axios from "axios";
 import { beforeEach } from "@jest/globals";
 
-import { RulePilot } from "../src";
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
+
+import { RulePilot } from "../src";
 
 const mutation1 = async (value: unknown) => {
   const result = await axios.get<{ cca2: any }>(

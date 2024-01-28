@@ -1,9 +1,8 @@
-import { RulePilot, Operator, Condition, Constraint } from "../src";
-
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
-
 import { invalid1Json } from "./rulesets/invalid1.json";
+
+import { Operator, RulePilot, Condition, Constraint } from "../src";
 
 describe("RulePilot validator correctly", () => {
   it("Identifies a bad operator", () => {

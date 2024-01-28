@@ -1,12 +1,11 @@
-import { RulePilot, Operator, RuleError } from "../src";
-
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { valid5Json } from "./rulesets/valid5.json";
-
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { invalid2Json } from "./rulesets/invalid2.json";
+
+import { Operator, RulePilot, RuleError } from "../src";
 
 describe("RulePilot engine correctly", () => {
   it("Evaluates a simple ruleset", async () => {

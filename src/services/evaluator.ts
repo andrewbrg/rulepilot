@@ -1,5 +1,5 @@
 import { ObjectDiscovery } from "./object-discovery";
-import { Condition, Constraint, Rule } from "../types/rule";
+import { Rule, Condition, Constraint } from "../types/rule";
 
 export class Evaluator {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
