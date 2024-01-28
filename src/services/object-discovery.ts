@@ -1,4 +1,4 @@
-import { Condition, ConditionType, Constraint } from "../types/rule";
+import { Condition, ConditionType, Constraint, Rule } from "../types/rule";
 
 export class ObjectDiscovery {
   /**
@@ -11,6 +11,28 @@ export class ObjectDiscovery {
     if ("none" in condition) return "none";
 
     return null;
+  }
+
+  /**
+   * Checks the rule to see if it is granular.
+   * @param rule The rule to check.
+   */
+  isGranular(rule: Rule): boolean {
+    const conditions =
+      rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
+
+    // Checks each condition making sure it has a result property.
+    for (const condition of conditions) {
+      if (
+        !this.isCondition(condition) ||
+        !("result" in condition) ||
+        undefined === condition.result
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -46,7 +68,7 @@ export class ObjectDiscovery {
    * @param path The path to resolve.
    * @param obj The object to resolve the path against.
    */
-  resolveNestedProperty(path, obj): any {
+  resolveNestedProperty(path: string, obj: object): any {
     return path.split(".").reduce((prev, curr) => prev?.[curr], obj);
   }
 }

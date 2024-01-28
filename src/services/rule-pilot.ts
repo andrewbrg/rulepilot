@@ -1,24 +1,26 @@
 import { Builder } from "./builder";
 import { Mutator } from "./mutator";
 import { Evaluator } from "./evaluator";
+import { Introspector } from "./introspector";
 import { ValidationResult, Validator } from "./validator";
 
-import { Rule } from "../types/rule";
+import { IntrospectionResult, Rule } from "../types/rule";
 import { RuleError } from "../types/error";
 
 export class RulePilot {
-  private static _rulePilot = new RulePilot();
+  static #rulePilot = new RulePilot();
 
-  private _mutator: Mutator = new Mutator();
-  private _validator: Validator = new Validator();
-  private _evaluator: Evaluator = new Evaluator();
+  #mutator: Mutator = new Mutator();
+  #validator: Validator = new Validator();
+  #evaluator: Evaluator = new Evaluator();
+  #introspector: Introspector = new Introspector();
 
   /**
    * Returns a rule builder class instance.
    * Allows for the construction of rules using a fluent interface.
    */
   builder(): Builder {
-    return new Builder(this._validator);
+    return new Builder(this.#validator);
   }
 
   /**
@@ -30,7 +32,7 @@ export class RulePilot {
    * @param mutation The mutation function.
    */
   addMutation(name: string, mutation: Function): RulePilot {
-    this._mutator.add(name, mutation);
+    this.#mutator.add(name, mutation);
     return this;
   }
 
@@ -41,7 +43,7 @@ export class RulePilot {
    * @param name The name of the mutation.
    */
   removeMutation(name: string): RulePilot {
-    this._mutator.remove(name);
+    this.#mutator.remove(name);
     return this;
   }
 
@@ -53,7 +55,7 @@ export class RulePilot {
    * @param name The mutator name to clear the cache for.
    */
   clearMutationCache(name?: string): RulePilot {
-    this._mutator.clearCache(name);
+    this.#mutator.clearCache(name);
     return this;
   }
 
@@ -66,7 +68,7 @@ export class RulePilot {
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
-   * @throws Error if the rule is invalid.
+   * @throws RuleError if the rule is invalid.
    */
   async evaluate<T>(
     rule: Rule,
@@ -80,7 +82,25 @@ export class RulePilot {
       throw new RuleError(validationResult);
     }
 
-    return this._evaluator.evaluate(rule, await this._mutator.mutate(criteria));
+    return this.#evaluator.evaluate(rule, await this.#mutator.mutate(criteria));
+  }
+
+  /**
+   * Given a rule, checks the constraints and conditions to determine
+   * the possible range of input criteria which would be satisfied by the rule.
+   *
+   * @param rule The rule to evaluate.
+   * @throws RuleError if the rule is invalid
+   * @throws RuleTypeError if the rule is not granular
+   */
+  introspect<T>(rule: Rule): IntrospectionResult<T> {
+    // Before we proceed with the rule, we should validate it.
+    const validationResult = this.validate(rule);
+    if (!validationResult.isValid) {
+      throw new RuleError(validationResult);
+    }
+
+    return this.#introspector.introspect<T>(rule);
   }
 
   /**
@@ -93,7 +113,7 @@ export class RulePilot {
    * @param rule The rule to validate.
    */
   validate(rule: Rule): ValidationResult {
-    return this._validator.validate(rule);
+    return this.#validator.validate(rule);
   }
 
   /**
@@ -101,7 +121,7 @@ export class RulePilot {
    * Allows for the construction of rules using a fluent interface.
    */
   static builder(): Builder {
-    return this._rulePilot.builder();
+    return this.#rulePilot.builder();
   }
 
   /**
@@ -113,14 +133,26 @@ export class RulePilot {
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    * @param trustRule Set true to avoid validating the rule before evaluating it (faster).
-   * @throws Error if the rule is invalid.
+   * @throws RuleError if the rule is invalid.
    */
   static async evaluate<T>(
     rule: Rule,
     criteria: object | object[],
     trustRule = false
   ): Promise<T> {
-    return RulePilot._rulePilot.evaluate<T>(rule, criteria, trustRule);
+    return RulePilot.#rulePilot.evaluate<T>(rule, criteria, trustRule);
+  }
+
+  /**
+   * Given a rule, checks the constraints and conditions to determine
+   * the possible range of input criteria which would be satisfied by the rule.
+   *
+   * @param rule The rule to introspect.
+   * @throws RuleError if the rule is invalid
+   * @throws RuleTypeError if the rule is not granular
+   */
+  static introspect<T>(rule: Rule): IntrospectionResult<T> {
+    return RulePilot.#rulePilot.introspect<T>(rule);
   }
 
   /**
@@ -133,7 +165,7 @@ export class RulePilot {
    * @param rule The rule to validate.
    */
   static validate(rule: Rule): ValidationResult {
-    return RulePilot._rulePilot.validate(rule);
+    return RulePilot.#rulePilot.validate(rule);
   }
 
   /**
@@ -146,7 +178,7 @@ export class RulePilot {
    * @param mutation The mutation function.
    */
   static addMutation(name: string, mutation: Function): RulePilot {
-    return RulePilot._rulePilot.addMutation(name, mutation);
+    return RulePilot.#rulePilot.addMutation(name, mutation);
   }
 
   /**
@@ -156,7 +188,7 @@ export class RulePilot {
    * @param name The name of the mutation.
    */
   static removeMutation(name: string): RulePilot {
-    return RulePilot._rulePilot.removeMutation(name);
+    return RulePilot.#rulePilot.removeMutation(name);
   }
 
   /**
@@ -167,6 +199,6 @@ export class RulePilot {
    * @param name The mutator name to clear the cache for.
    */
   static clearMutationCache(name?: string): RulePilot {
-    return RulePilot._rulePilot.clearMutationCache(name);
+    return RulePilot.#rulePilot.clearMutationCache(name);
   }
 }

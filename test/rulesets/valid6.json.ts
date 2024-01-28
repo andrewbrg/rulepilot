@@ -1,6 +1,6 @@
 import { Rule } from "../../src";
 
-export const valid4Json: Rule = {
+export const valid6Json: Rule = {
   conditions: [
     {
       any: [
@@ -58,9 +58,9 @@ export const valid4Json: Rule = {
                     {
                       all: [
                         {
-                          field: "HasStudentCard",
+                          field: "Category",
                           operator: "==",
-                          value: true,
+                          value: 122,
                         },
                         {
                           field: "IsUnder18",
