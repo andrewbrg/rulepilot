@@ -129,14 +129,14 @@ const criteria = {
 };
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate<boolean>(rule, criteria);
 // result == true
 
 // However, if any of the criteria do not pass the check, the result will be false
 criteria.totalCheckoutPrice = 25.0;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate<boolean>(rule, criteria);
 // result == false
 ```
 
@@ -195,13 +195,13 @@ const criteria = {
 };
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate<boolean>(rule, criteria);
 // result == false
 
 criteria.hasStudentCard = true;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate<boolean>(rule, criteria);
 // result == true
 ```
 
@@ -438,7 +438,7 @@ const criteria = {
 
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, criteria);
+let result = await RulePilot.evaluate<number>(rule, criteria);
 // result = 5
 
 criteria.country = "SE";
@@ -446,7 +446,7 @@ criteria.city = "Linköping";
 
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate<number>(rule, criteria);
 // result = 10
 
 criteria.country = "IT";
@@ -454,7 +454,7 @@ criteria.age = 17;
 criteria.hasStudentCard = false;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate(rule, criteria);
+result = await RulePilot.evaluate<number>(rule, criteria);
 // result = false
 ```
 
@@ -480,7 +480,7 @@ const rule: Rule = {
 
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, {});
+let result = await RulePilot.evaluate<number>(rule, {});
 // result = 2.5
 ```
 

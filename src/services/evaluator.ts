@@ -13,7 +13,7 @@ export class Evaluator {
    * @param rule The rule to evaluate.
    * @param criteria The criteria to evaluate the rule against.
    */
-  evaluate(rule: Rule, criteria: object | object[]): boolean | any {
+  evaluate<T>(rule: Rule, criteria: object | object[]): boolean | any {
     // Cater for the case where the conditions property is not an array.
     const conditions =
       rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
@@ -21,13 +21,13 @@ export class Evaluator {
     if (criteria instanceof Array) {
       const result = [];
       for (const c of criteria) {
-        result.push(this.evaluateRule(conditions, c, rule?.default));
+        result.push(this.evaluateRule<T>(conditions, c, rule?.default));
       }
 
       return result;
     }
 
-    return this.evaluateRule(conditions, criteria, rule?.default);
+    return this.evaluateRule<T>(conditions, criteria, rule?.default);
   }
 
   /**
@@ -36,11 +36,11 @@ export class Evaluator {
    * @param criteria The criteria to evaluate the conditions against.
    * @param defaultResult The default result to return if no conditions pass.
    */
-  private evaluateRule(
+  private evaluateRule<T>(
     conditions: Condition[],
     criteria: object,
     defaultResult?: any
-  ): boolean | any {
+  ): T | boolean {
     // We should evaluate all conditions and return the result
     // of the first condition that passes.
     for (const condition of conditions) {

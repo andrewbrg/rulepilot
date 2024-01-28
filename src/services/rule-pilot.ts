@@ -74,7 +74,7 @@ export class RulePilot {
     rule: Rule,
     criteria: object | object[],
     trustRule = false
-  ): Promise<T> {
+  ): Promise<T | boolean> {
     // Before we evaluate the rule, we should validate it.
     // If `trustRuleset` is set to true, we will skip validation.
     const validationResult = !trustRule && this.validate(rule);
@@ -82,7 +82,10 @@ export class RulePilot {
       throw new RuleError(validationResult);
     }
 
-    return this.#evaluator.evaluate(rule, await this.#mutator.mutate(criteria));
+    return this.#evaluator.evaluate<T>(
+      rule,
+      await this.#mutator.mutate(criteria)
+    );
   }
 
   /**
@@ -139,7 +142,7 @@ export class RulePilot {
     rule: Rule,
     criteria: object | object[],
     trustRule = false
-  ): Promise<T> {
+  ): Promise<T | boolean> {
     return RulePilot.#rulePilot.evaluate<T>(rule, criteria, trustRule);
   }
 
