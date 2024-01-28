@@ -716,9 +716,13 @@ What this means is that given any rule, the introspection feature will return al
 which the rule can be evaluated against which will result in all the possible outputs the rule can have.
 
 This is a useful feature when you want to know what inputs will result in a specific output, or what inputs will result
-in a specific output distribution, for example if a `RulePilot` rule is being used to evaluate what type of discount a
-user should get, you can use the introspection feature to tell the user what products, quantities, requirements, etc. 
-they must fulfill in order to obtain each possible discount.
+in a specific output distribution.
+
+For example if a `RulePilot` rule is being used to evaluate what type of discount a user should get, you can use 
+the introspection feature to tell the user what products, quantities, requirements, etc. they must fulfill in 
+order to obtain each possible discount. 
+
+This is particularly useful when using some form of rule based configuration to drive the UI of an application.
 
 Taking a simple granular rule as an example:
 
@@ -812,6 +816,11 @@ The following will be returned in the `introspection` variable:
   ]
 }
 ```
+
+Each possible result that the rule can evaluate to is returned in the `results` array, along with the possible inputs
+which will result in that result in the `options` array.
+
+Each object in the `options` array is a set of criteria must be met in order for the rule to evaluate to the result.
 
 Although calculating such results might seem trivial, it can be in fact be quite a complex thing to do especially when 
 dealing with complex rules with multiple nested conditions comprised of many different operators.
