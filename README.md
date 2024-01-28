@@ -1,6 +1,6 @@
 <img src=".github/logo.png" width="190" alt="RulePilot" />
 
-[![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot?v1.1.2)
+[![npm version](https://badge.fury.io/js/rulepilot.svg)](https://badge.fury.io/js/rulepilot?v1.2.1)
 
 | Statements                                                                  | Functions                                                                  | Lines                                                                  |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -35,7 +35,7 @@ each condition's evaluation.
 - Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
 - Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, 
-`Contains`, `Not Contains`, `ContainsAny` and `Not ContainsAny` operators
+`Contains`, `Not Contains`, `ContainsAny`, `Not ContainsAny`, `Matches` and `Not Matches` operators
 
 ## Usage
 
@@ -508,7 +508,7 @@ These are the operators available for a constraint and how they are used:
 
 - `==`: Applies JavaScript equality (`==`) operator to criterion and constraint value
 - `!=`: Applies JavaScript inequality (`!=`) operator to criterion and constraint value
-- `>`: Applies JavaScript greather than (`>`) operator to criterion and constraint value
+- `>`: Applies JavaScript greater than (`>`) operator to criterion and constraint value
 - `<`: Applies JavaScript less than (`<`) operator to criterion and constraint value
 - `>=`: Applies JavaScript greater than or equal (`>=`) operator to criterion and constraint value
 - `<=`: Applies JavaScript less than or equal (`<=`) operator to criterion and constraint value
@@ -516,6 +516,10 @@ These are the operators available for a constraint and how they are used:
 - `not in`: Tests if the criterion is not an element of the constraint value (value must be an array)
 - `contains`: Tests if the constraint value is an element of the criterion (criterion must be an array)
 - `contains any`: Tests if any element in the constraint value is an element of the criterion (criterion and constraint value must be an array)
+- `not contains`: Tests if the constraint value is not an element of the criterion (criterion must be an array)
+- `not contains any`: Tests if any element in the constraint value is bot an element of the criterion (criterion and constraint value must be an array)
+- `matches`: Tests if the constraint value matches a regular expression (criterion must be a valid regex)
+- `not matches`: Tests if the constraint value does not match a regular expression (criterion must be a valid regex)
 
 ### Criteria With Nested Properties
 
@@ -708,6 +712,128 @@ cause mutations to log debug information to the console.
 ```typescript
 process.env.DEBUG = "true";
 ```
+
+## Introspection
+
+Rule introspection is built into `RulePilot` and can be used to inspect a rule and get information about it.
+
+when `RulePilot` introspects a rule it attempts to determine, for each distinct result set in the rule, the 
+distribution of inputs which will satisfy the rule in a manner which evaluates to said result.
+
+What this means is that given any rule, the introspection feature will return all the possible input combinations 
+which the rule can be evaluated against which will result in all the possible outputs the rule can have.
+
+This is a useful feature when you want to know what inputs will result in a specific output, or what inputs will result
+in a specific output distribution, for example if a `RulePilot` rule is being used to evaluate what type of discount a
+user should get, you can use the introspection feature to tell the user what products, quantities, requirements, etc. 
+they must fulfill in order to obtain each possible discount.
+
+Taking a simple granular rule as an example:
+
+```typescript
+import { RulePilot, Rule } from "rulepilot";
+
+const rule: Rule = {
+  conditions: [
+    {
+      any: [
+        {
+          all: [
+            {
+              field: "country",
+              operator: "in",
+              value: ["GB", "FI"],
+            },
+            {
+              field: "hasCoupon",
+              operator: "==",
+              value: true,
+            },
+            {
+              field: "totalCheckoutPrice",
+              operator: ">=",
+              value: 120.0,
+            },
+          ],
+        },
+        {
+          field: "country",
+          operator: "==",
+          value: "SE",
+        },
+      ],
+      result: 5,
+    },
+    {
+      all: [
+        {
+          field: "age",
+          operator: ">=",
+          value: 18,
+        },
+        {
+          field: "hasStudentCard",
+          operator: "==",
+          value: true,
+        },
+      ],
+      result: 10,
+    },
+  ],
+};
+
+// Intropect the rule
+const introspection = RulePilot.introspect(rule);
+```
+
+The following will be returned in the `introspection` variable:
+
+```json
+{
+  "results": [
+    {
+      "result": 5,
+      "options": [
+        { "country": "SE" },
+        {
+          "country": ["GB", "FI"],
+          "hasCoupon": true,
+          "totalCheckoutPrice": {
+            "operator": ">=",
+            "value": 120
+          }
+        }
+      ]
+    },
+    {
+      "result": 10,
+      "options": [
+        {
+          "age": {
+            "operator": ">=",
+            "value": 18
+          },
+          "hasStudentCard": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+Although calculating such results might seem trivial, it can be in fact be quite a complex thing to do especially when 
+dealing with complex rules with multiple nested conditions comprised of many different operators.
+
+Similarly to mutations, it is possible to enable debug mode on the introspection feature by setting the environment
+variable `DEBUG="true"`.
+
+```typescript
+process.env.DEBUG = "true";
+```
+
+**Note:** Introspection requires a [Granular](#granular-example) rule to be passed to it, otherwise `RulePilot` will 
+throw an `RuleTypeError`.
+
 
 ## Fluent Rule Builder
 

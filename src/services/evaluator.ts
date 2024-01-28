@@ -154,6 +154,10 @@ export class Evaluator {
           !Array.isArray(constraint.value) ||
           !constraint.value.some((x) => criterion.includes(x))
         );
+      case "matches":
+        return new RegExp(criterion).test(`${constraint.value}`);
+      case "not matches":
+        return !new RegExp(criterion).test(`${constraint.value}`);
       default:
         return false;
     }

@@ -11,7 +11,7 @@ import { RuleTypeError } from "../types/error";
 import { ObjectDiscovery } from "./object-discovery";
 
 interface IntrospectionStep {
-  parType?: ConditionType;
+  parentType?: ConditionType;
   currType: ConditionType;
   depth: number;
   option: Record<string, unknown>;
@@ -23,7 +23,7 @@ interface IntrospectionStep {
 
 export class Introspector {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
-  #steps: IntrospectionStep[] = [];
+  #steps: IntrospectionStep[];
 
   /**
    * Given a rule, checks the constraints and conditions to determine
@@ -36,9 +36,12 @@ export class Introspector {
     // The ruleset needs to be granular for this operation to work
     if (!this.#objectDiscovery.isGranular(rule)) {
       throw new RuleTypeError(
-        "Provided rule not granular, a granular rule is required"
+        "The provided rule is not granular. A granular rule is required for Introspection"
       );
     }
+
+    // Initialize a clean steps array each time we introspect
+    this.#steps = [];
 
     const conditions =
       rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
@@ -100,7 +103,6 @@ export class Introspector {
 
         // Find the criteria range object for the result
         let criteriaRangeItem = criteriaRanges.find((c) => c.result == result);
-
         criteriaRangeItem = this.populateCriteriaRangeOptions<T>(
           criteriaRangeItem,
           condition,
@@ -210,7 +212,7 @@ export class Introspector {
     option: Record<string, unknown>,
     constraint: Constraint,
     type: ConditionType
-  ) {
+  ): Record<string, unknown> {
     // We need to clone the constraint because we will be modifying it
     const c = { ...constraint };
 
@@ -255,6 +257,12 @@ export class Introspector {
         case "not contains any":
           c.operator = "contains any";
           break;
+        case "matches":
+          c.operator = "not matches";
+          break;
+        case "not matches":
+          c.operator = "matches";
+          break;
       }
     }
 
@@ -267,16 +275,7 @@ export class Introspector {
           case "in":
             option[c.field] = c.value;
             break;
-          case "!=":
-          case ">":
-          case "<":
-          case ">=":
-          case "<=":
-          case "not in":
-          case "contains":
-          case "not contains":
-          case "contains any":
-          case "not contains any":
+          default:
             option[c.field] = {
               operator: c.operator,
               value: c.value,
@@ -295,16 +294,7 @@ export class Introspector {
           case "==":
           case "in":
             return { [c.field]: c.value };
-          case "!=":
-          case ">":
-          case "<":
-          case ">=":
-          case "<=":
-          case "not in":
-          case "contains":
-          case "not contains":
-          case "contains any":
-          case "not contains any":
+          default:
             return {
               [c.field]: {
                 operator: c.operator,
@@ -316,19 +306,8 @@ export class Introspector {
     }
 
     let value = c.value;
-    switch (c.operator) {
-      case "!=":
-      case ">":
-      case "<":
-      case ">=":
-      case "<=":
-      case "not in":
-      case "contains":
-      case "not contains":
-      case "contains any":
-      case "not contains any":
-        value = { operator: c.operator, value: c.value };
-        break;
+    if (c.operator !== "==") {
+      value = { operator: c.operator, value: c.value };
     }
 
     option[c.field] = [...new Set([option[c.field], value].flat())];
@@ -339,14 +318,14 @@ export class Introspector {
   /**
    * Adds an option to a criteria range entry based on the condition type and parent type.
    * @param currType The current condition type.
-   * @param parType The type of the parent condition.
+   * @param parentType The type of the parent condition.
    * @param entry The criteria range entry to update.
    * @param option The option to update the criteria range entry with.
    * @param depth The current recursion depth.
    */
   private addOptionToCriteriaRange<T>(
     currType: ConditionType,
-    parType: ConditionType,
+    parentType: ConditionType,
     entry: CriteriaRange<T>,
     option: Record<string, unknown>,
     depth: number
@@ -354,7 +333,7 @@ export class Introspector {
     const lastIdx = entry.options.length - 1;
 
     // We create new objects in the options array
-    if (["all", "none"].includes(currType) && parType === "any") {
+    if (["all", "none"].includes(currType) && parentType === "any") {
       // If we encounter this pair in a deeply nested condition we need to clone
       // the last option and add the options from the all by either appending
       // them if the key is new, or replacing the 'any' with the new values.
@@ -398,13 +377,18 @@ export class Introspector {
             : value;
         }
 
-        this.#steps.push({ parType, currType, depth, option: baseOption });
+        this.#steps.push({
+          parentType,
+          currType,
+          depth,
+          option: baseOption,
+        });
 
         entry.options.push(baseOption);
         return entry;
       }
 
-      this.#steps.push({ parType, currType, depth, option });
+      this.#steps.push({ parentType, currType, depth, option });
 
       entry.options.push(option);
       return entry;
@@ -412,9 +396,10 @@ export class Introspector {
 
     // We add these options onto the last object in the options array
     if (
-      ("any" === currType && "any" === parType) ||
-      ("any" === currType && ["all", "none"].includes(parType)) ||
-      (["all", "none"].includes(currType) && ["all", "none"].includes(parType))
+      ("any" === currType && "any" === parentType) ||
+      ("any" === currType && ["all", "none"].includes(parentType)) ||
+      (["all", "none"].includes(currType) &&
+        ["all", "none"].includes(parentType))
     ) {
       const changes: IntrospectionStep["changes"] = [];
       for (const [key, value] of Object.entries(option)) {
@@ -426,7 +411,7 @@ export class Introspector {
       }
 
       this.#steps.push({
-        parType,
+        parentType,
         currType,
         depth,
         option: entry.options[lastIdx],
@@ -436,7 +421,7 @@ export class Introspector {
       return entry;
     }
 
-    this.#steps.push({ parType, currType, depth, option });
+    this.#steps.push({ parentType, currType, depth, option });
 
     entry.options.push(option);
     return entry;
@@ -447,18 +432,19 @@ export class Introspector {
    * of some parent condition with a given type.
    * @param parentType The type of the parent condition.
    */
-  private isCurrentStepChildOf(parentType: ConditionType) {
+  private isCurrentStepChildOf(parentType: ConditionType): boolean {
     if (!this.#steps?.length) {
       return false;
     }
 
+    // Clone the steps array so that we can pop items off it
     const steps = [...this.#steps];
     let step = steps.pop();
 
+    // Check ancestors until we reach the first root condition
     while (step?.depth >= 0) {
-      if (step.currType === parentType || step.parType === parentType) {
+      if (step.currType === parentType || step.parentType === parentType)
         return true;
-      }
 
       step = steps.pop();
     }

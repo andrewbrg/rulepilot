@@ -1,13 +1,21 @@
-import { RulePilot } from "../src";
+import { RuleError, RulePilot, RuleTypeError } from "../src";
 
+import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { valid4Json } from "./rulesets/valid4.json";
 import { valid6Json } from "./rulesets/valid6.json";
 import { valid7Json } from "./rulesets/valid7.json";
 import { valid8Json } from "./rulesets/valid8.json";
+import { valid9Json } from "./rulesets/valid9.json";
+import { invalid1Json } from "./rulesets/invalid1.json";
 
 describe("RulePilot introspector correctly", () => {
-  it("Introspects various rules", async () => {
+  it("Detects invalid rules", async () => {
+    expect(() => RulePilot.introspect(valid2Json)).toThrow(RuleTypeError);
+    expect(() => RulePilot.introspect(invalid1Json)).toThrow(RuleError);
+  });
+
+  it("Introspects valid rules", async () => {
     expect(RulePilot.introspect(valid3Json)).toEqual({
       results: [
         {
@@ -124,6 +132,28 @@ describe("RulePilot introspector correctly", () => {
         {
           result: 4,
           options: [{ Category: { operator: "!=", value: "Islamic" } }],
+        },
+      ],
+    });
+
+    expect(RulePilot.introspect(valid9Json)).toEqual({
+      results: [
+        {
+          result: 5,
+          options: [
+            { country: "SE" },
+            {
+              country: ["GB", "FI"],
+              hasCoupon: true,
+              totalCheckoutPrice: { operator: ">=", value: 120 },
+            },
+          ],
+        },
+        {
+          result: 10,
+          options: [
+            { age: { operator: ">=", value: 18 }, hasStudentCard: true },
+          ],
         },
       ],
     });

@@ -11,7 +11,9 @@ export type Operator =
   | "contains"
   | "not contains"
   | "contains any"
-  | "not contains any";
+  | "not contains any"
+  | "matches"
+  | "not matches";
 
 export interface Constraint {
   field: string;

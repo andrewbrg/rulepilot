@@ -164,6 +164,8 @@ export class Validator {
       "not contains",
       "contains any",
       "not contains any",
+      "matches",
+      "not matches",
     ];
     if (!operators.includes(constraint.operator as Operator)) {
       return {
@@ -186,10 +188,25 @@ export class Validator {
         isValid: false,
         error: {
           message:
-            'Constraint "value" must be an array if the "operator" is "in", "not in", "contains any" or "not contains any"',
+            'Constraint "value" must be an array if the "operator" is in ["in", "not in", "contains any", "not contains any"]',
           element: constraint,
         },
       };
+    }
+
+    if (["matches", "not matches"].includes(constraint.operator)) {
+      try {
+        new RegExp(constraint.value as string);
+      } catch (e) {
+        return {
+          isValid: false,
+          error: {
+            message:
+              'Constraint "value" must be a valid regular expression if the "operator" is in ["matches", "not matches"]',
+            element: constraint,
+          },
+        };
+      }
     }
 
     return { isValid: true };
