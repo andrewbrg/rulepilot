@@ -5,12 +5,12 @@ import { Logger } from "./logger";
 import { ObjectDiscovery } from "./object-discovery";
 
 export class Mutator {
-  private _cache: Map<string, any> = new Map();
-  private _buffer: Map<string, boolean> = new Map();
-  private _mutations: Map<string, Function> = new Map();
+  #cache: Map<string, any> = new Map();
+  #buffer: Map<string, boolean> = new Map();
+  #mutations: Map<string, Function> = new Map();
 
-  private _objectDiscovery = new ObjectDiscovery();
-  private _eventEmitter = new EventEmitter();
+  #objectDiscovery = new ObjectDiscovery();
+  #eventEmitter = new EventEmitter();
 
   /**
    * Adds a mutation to the mutator instance.
@@ -18,7 +18,7 @@ export class Mutator {
    * @param mutation The mutation function.
    */
   add(name: string, mutation: Function): void {
-    this._mutations.set(name, mutation);
+    this.#mutations.set(name, mutation);
   }
 
   /**
@@ -28,7 +28,7 @@ export class Mutator {
    */
   remove(name: string): void {
     this.clearCache(name);
-    this._mutations.delete(name);
+    this.#mutations.delete(name);
   }
 
   /**
@@ -39,13 +39,13 @@ export class Mutator {
    */
   clearCache(name?: string): void {
     if (!name) {
-      this._cache.clear();
+      this.#cache.clear();
       return;
     }
 
-    for (const key of this._cache.keys()) {
+    for (const key of this.#cache.keys()) {
       if (key.startsWith(name)) {
-        this._cache.delete(key);
+        this.#cache.delete(key);
       }
     }
   }
@@ -60,7 +60,7 @@ export class Mutator {
     const exec = async (criteria) => {
       // If there are no mutations or the criteria does not contain
       // any of the mutation keys, return the criteria as is.
-      if (!this._mutations.size || !this.hasMutations(criteria)) {
+      if (!this.#mutations.size || !this.hasMutations(criteria)) {
         return criteria;
       }
 
@@ -109,9 +109,9 @@ export class Mutator {
       const path = parentPath ? `${parentPath}.${key}` : key;
 
       // If the value is an object, we should recurse.
-      result = this._objectDiscovery.isObject(criteria[key])
+      result = this.#objectDiscovery.isObject(criteria[key])
         ? result || this.hasMutations(criteria[key], result, path)
-        : result || this._mutations.has(path);
+        : result || this.#mutations.has(path);
     }
 
     return result;
@@ -132,11 +132,11 @@ export class Mutator {
           // Prepare dotted path to the current property.
           const path = parentPath ? `${parentPath}.${key}` : key;
 
-          if (this._objectDiscovery.isObject(criteria[key])) {
+          if (this.#objectDiscovery.isObject(criteria[key])) {
             await this.applyMutations(criteria[key], path);
           }
 
-          if (this._mutations.has(path)) {
+          if (this.#mutations.has(path)) {
             criteria[key] = await this.execMutation(key, criteria, path);
           }
 
@@ -167,18 +167,18 @@ export class Mutator {
       .digest("hex")}`;
 
     // If the mutation has already been executed, return the cached result.
-    if (this._cache.has(cacheKey)) {
+    if (this.#cache.has(cacheKey)) {
       Logger.debug(`Cache hit on "${mutationKey}" with param "${value}"`);
-      return this._cache.get(cacheKey);
+      return this.#cache.get(cacheKey);
     }
 
     // If the mutation is already in progress, wait for it to finish.
-    if (this._buffer.get(cacheKey)) {
+    if (this.#buffer.get(cacheKey)) {
       return await new Promise((resolve) => {
         Logger.debug(
           `Waiting on mutation "${mutationKey}" with param "${value}"`
         );
-        this._eventEmitter.once(`mutation:${cacheKey}`, (result) => {
+        this.#eventEmitter.once(`mutation:${cacheKey}`, (result) => {
           Logger.debug(
             `Resolved mutation "${mutationKey}" with param "${value}"`
           );
@@ -189,19 +189,19 @@ export class Mutator {
 
     // Set the buffer to true to indicate that the mutation is in progress.
     // This prevents duplicate executions of the same mutation.
-    this._buffer.set(cacheKey, true);
+    this.#buffer.set(cacheKey, true);
 
     // Execute the mutation
     Logger.debug(`Running mutation "${mutationKey}" with param "${value}"`);
-    const mutation = this._mutations.get(mutationKey);
+    const mutation = this.#mutations.get(mutationKey);
     const result = await mutation(value, criteria);
 
     // Cache the result and release the buffer to false.
-    this._cache.set(cacheKey, result);
-    this._buffer.set(cacheKey, false);
+    this.#cache.set(cacheKey, result);
+    this.#buffer.set(cacheKey, false);
 
     // Emit an event to indicate that the mutation has been executed.
-    this._eventEmitter.emit(`mutation:${cacheKey}`, result);
+    this.#eventEmitter.emit(`mutation:${cacheKey}`, result);
 
     return result;
   }

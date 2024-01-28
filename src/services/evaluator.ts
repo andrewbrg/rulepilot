@@ -2,7 +2,7 @@ import { ObjectDiscovery } from "./object-discovery";
 import { Condition, Constraint, Rule } from "../types/rule";
 
 export class Evaluator {
-  private _objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
+  #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
 
   /**
    * Evaluates a rule against a set of criteria and returns the result.
@@ -63,7 +63,7 @@ export class Evaluator {
    */
   private evaluateCondition(condition: Condition, criteria: object): boolean {
     // The condition must have an 'any' or 'all' property.
-    const type = this._objectDiscovery.conditionType(condition);
+    const type = this.#objectDiscovery.conditionType(condition);
     if (!type) {
       return false;
     }
@@ -75,10 +75,10 @@ export class Evaluator {
     // Check each node in the condition.
     for (const node of condition[type]) {
       let fn: string;
-      if (this._objectDiscovery.isCondition(node)) {
+      if (this.#objectDiscovery.isCondition(node)) {
         fn = "evaluateCondition";
       }
-      if (this._objectDiscovery.isConstraint(node)) {
+      if (this.#objectDiscovery.isConstraint(node)) {
         fn = "checkConstraint";
       }
 
@@ -106,7 +106,7 @@ export class Evaluator {
   private checkConstraint(constraint: Constraint, criteria: object): boolean {
     // If the value contains '.' we should assume it is a nested property
     const criterion = constraint.field.includes(".")
-      ? this._objectDiscovery.resolveNestedProperty(constraint.field, criteria)
+      ? this.#objectDiscovery.resolveNestedProperty(constraint.field, criteria)
       : criteria[constraint.field];
 
     // If the criteria object does not have the field
@@ -140,10 +140,19 @@ export class Evaluator {
         );
       case "contains":
         return Array.isArray(criterion) && criterion.includes(constraint.value);
+      case "not contains":
+        return (
+          !Array.isArray(criterion) || !criterion.includes(constraint.value)
+        );
       case "contains any":
         return (
           Array.isArray(constraint.value) &&
           constraint.value.some((x) => criterion.includes(x))
+        );
+      case "not contains any":
+        return (
+          !Array.isArray(constraint.value) ||
+          !constraint.value.some((x) => criterion.includes(x))
         );
       default:
         return false;

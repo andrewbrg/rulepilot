@@ -34,7 +34,8 @@ each condition's evaluation.
 - Supports Criteria objects with nested properties
 - Rule validation & debugging tools
 - Supports `Any`, `All`, and `None` type conditions
-- Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, `Contains`, and `ContainsAny` operators
+- Supports `Equal`, `NotEqual`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `In`, `NotIn`, 
+`Contains`, `Not Contains`, `ContainsAny` and `Not ContainsAny` operators
 
 ## Usage
 

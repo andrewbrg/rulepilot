@@ -9,7 +9,9 @@ export type Operator =
   | "in"
   | "not in"
   | "contains"
-  | "contains any";
+  | "not contains"
+  | "contains any"
+  | "not contains any";
 
 export interface Constraint {
   field: string;
@@ -35,7 +37,11 @@ export interface Rule<R = any> {
 }
 
 export interface CriteriaRange<R = any> {
-  type: R;
+  result: R;
   options?: Record<string, unknown>[];
-  isDefault: boolean;
+}
+
+export interface IntrospectionResult<R = any> {
+  results: CriteriaRange<R>[];
+  default?: R;
 }

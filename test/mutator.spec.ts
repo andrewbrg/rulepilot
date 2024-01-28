@@ -5,15 +5,15 @@ import { RulePilot } from "../src";
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
 
-const mutation1 = async (value) => {
-  const result = await axios.get(
+const mutation1 = async (value: unknown) => {
+  const result = await axios.get<{ cca2: any }>(
     `https://restcountries.com/v3.1/name/${value}?fullText=true`
   );
   return result.data[0].cca2;
 };
 
-const mutation2 = async (value) => {
-  const result = await axios.get(
+const mutation2 = async (value: unknown) => {
+  const result = await axios.get<{ cca2: any }>(
     `https://restcountries.com/v3.1/name/${value[0]}?fullText=true`
   );
   return result.data[0].cca2;
@@ -46,7 +46,7 @@ describe("RulePilot mutator correctly", () => {
   it("Performs desired mutation", async () => {
     const rp = new RulePilot();
 
-    rp.addMutation("ProfitPercentage", (value) => value * 2);
+    rp.addMutation("ProfitPercentage", (value: number) => value * 2);
     expect(await rp.evaluate(valid1Json, { ProfitPercentage: 5 })).toEqual(
       true
     );
@@ -55,8 +55,8 @@ describe("RulePilot mutator correctly", () => {
   it("Performs multiple mutations", async () => {
     const rp = new RulePilot();
 
-    rp.addMutation("WinRate", (value) => value * 2);
-    rp.addMutation("AverageTradeDuration", (value) => value / 2);
+    rp.addMutation("WinRate", (value: number) => value * 2);
+    rp.addMutation("AverageTradeDuration", (value: number) => value / 2);
 
     expect(
       await rp.evaluate(valid1Json, {
@@ -88,7 +88,7 @@ describe("RulePilot mutator correctly", () => {
   it("Performs nested mutation", async () => {
     const rp = new RulePilot();
 
-    rp.addMutation("foo.bar", (value) => value * 2);
+    rp.addMutation("foo.bar", (value: number) => value * 2);
     expect(
       await rp.evaluate(
         {
@@ -106,7 +106,7 @@ describe("RulePilot mutator correctly", () => {
   it("Caches async mutation results", async () => {
     const rp = new RulePilot();
 
-    rp.addMutation("Leverage", (value) => value);
+    rp.addMutation("Leverage", (value: unknown) => value);
     rp.addMutation("CountryIso", mutation1);
 
     const result = await rp.evaluate(valid3Json, criteria);
@@ -159,7 +159,7 @@ describe("RulePilot mutator correctly", () => {
   it("Mutation cache works properly", async () => {
     const rp = new RulePilot();
 
-    rp.addMutation("Leverage", (value) => value);
+    rp.addMutation("Leverage", (value: unknown) => value);
     rp.addMutation("CountryIso", mutation1);
 
     await rp.evaluate(valid3Json, criteria);

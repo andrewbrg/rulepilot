@@ -80,7 +80,7 @@ export class Validator {
     const type = this.objectDiscovery.conditionType(condition);
 
     // Check if the condition is iterable
-    if(!Array.isArray(condition[type])) {
+    if (!Array.isArray(condition[type])) {
       return {
         isValid: false,
         error: {
@@ -151,7 +151,20 @@ export class Validator {
       };
     }
 
-    const operators: Operator[] = ["==", "!=", ">", "<", ">=", "<=", "in", "not in", "contains", "contains any"];
+    const operators: Operator[] = [
+      "==",
+      "!=",
+      ">",
+      "<",
+      ">=",
+      "<=",
+      "in",
+      "not in",
+      "contains",
+      "not contains",
+      "contains any",
+      "not contains any",
+    ];
     if (!operators.includes(constraint.operator as Operator)) {
       return {
         isValid: false,
@@ -164,14 +177,16 @@ export class Validator {
 
     // We must check that the value is an array if the operator is 'in' or 'not in'.
     if (
-      ["in", "not in", "contains any"].includes(constraint.operator) &&
+      ["in", "not in", "contains any", "not contains any"].includes(
+        constraint.operator
+      ) &&
       !Array.isArray(constraint.value)
     ) {
       return {
         isValid: false,
         error: {
           message:
-            'Constraint "value" must be an array if the "operator" is "in", "not in", or "contains any"',
+            'Constraint "value" must be an array if the "operator" is "in", "not in", "contains any" or "not contains any"',
           element: constraint,
         },
       };
