@@ -128,20 +128,16 @@ const criteria = {
   hasCoupon: true,
 };
 
-/**
- * Evaluate the criteria against the rule
- *
- * The result will be true
- */
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, criteria);
+// result == true
 
 // However, if any of the criteria do not pass the check, the result will be false
 criteria.totalCheckoutPrice = 25.0;
 
-/**
- * The result will be false
- */
+/** Evaluate the new criteria against the rule */
 result = await RulePilot.evaluate(rule, criteria);
+// result == false
 ```
 
 We can add additional conditions to the rule, for example apart from the above-mentioned conditions, we can also
@@ -198,16 +194,15 @@ const criteria = {
   hasCoupon: true,
 };
 
-/**
- * The result will be false
- */
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, criteria);
+// result == false
 
-/**
- * The result will be true
- */
 criteria.hasStudentCard = true;
+
+/** Evaluate the new criteria against the rule */
 result = await RulePilot.evaluate(rule, criteria);
+// result == true
 ```
 
 If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition.
@@ -441,27 +436,26 @@ const criteria = {
   hasCoupon: true,
 };
 
-/**
- * The result will be 5
- */
+
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, criteria);
+// result = 5
 
 criteria.country = "SE";
 criteria.city = "Linköping";
 
-/**
- * The result will be 10
- */
+
+/** Evaluate the new criteria against the rule */
 result = await RulePilot.evaluate(rule, criteria);
+// result = 10
 
 criteria.country = "IT";
 criteria.age = 17;
 criteria.hasStudentCard = false;
 
-/**
- * The result will be false
- */
+/** Evaluate the new criteria against the rule */
 result = await RulePilot.evaluate(rule, criteria);
+// result = false
 ```
 
 **Important** When using granular rules, the order of conditions in the rule matters!
@@ -484,10 +478,10 @@ const rule: Rule = {
   default: 2.5,
 };
 
-/**
- * The result will be 2.4
- */
+
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, {});
+// result = 2.5
 ```
 
 In such a setup as seen above, if no conditions are met, the result will be `2.5`.
@@ -549,10 +543,9 @@ const criteria = {
   },
 };
 
-/**
- * The result will be true
- */
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, criteria);
+// result = true
 ```
 
 ### Evaluating Multiple Criteria At Once
@@ -585,10 +578,9 @@ const criteria = [
   },
 ];
 
-/**
- * The result will be [true, false]
- */
+/** Evaluate the criteria against the rule */
 let result = await RulePilot.evaluate(rule, criteria);
+// result = [true, false]
 ```
 
 ## Validating A Rule
