@@ -1,6 +1,6 @@
 {
   "name": "rulepilot",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Rule parsing engine for JSON rules",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
