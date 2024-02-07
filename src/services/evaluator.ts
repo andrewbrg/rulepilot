@@ -111,7 +111,7 @@ export class Evaluator {
 
     // If the criteria object does not have the field
     // we are looking for, we should return false.
-    if (!criterion) {
+    if (undefined === criterion) {
       return false;
     }
 
