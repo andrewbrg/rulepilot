@@ -528,13 +528,13 @@ To do so, we can use the `.` (dot) notation to access nested properties in the c
 import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
-  conditions: [
-    {
+  conditions: {
+    all: [{
       field: "profile.age",
       operator: ">=",
       value: 18,
-    },
-  ],
+    }],
+  },
 };
 
 const criteria = {
@@ -557,11 +557,11 @@ import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
   conditions: {
-    any: {
+    any: [{
       field: "profile.age",
       operator: ">=",
       value: 18,
-    },
+    }],
   },
 };
 
@@ -635,7 +635,7 @@ import { fetchAccount } from './api'
 
 const rule: Rule = {
   conditions: [{
-    "all": [{
+    all: [{
       field: "account.balance",
       operator: ">=",
       value: 100.00,
