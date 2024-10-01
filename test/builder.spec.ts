@@ -63,6 +63,70 @@ describe("RulePilot builder correctly", () => {
     });
   });
 
+  it("Creates a complex ruleset with sub rules", () => {
+    const builder = RulePilot.builder();
+
+    const sub = builder.subRule();
+    sub.result(33);
+    sub.add(sub.condition("all", [sub.constraint("fieldD", "==", "whoop")]));
+
+    const rule: Rule = builder
+      .add(
+        builder.condition(
+          "all",
+          [
+            builder.condition(
+              "any",
+              [
+                builder.constraint("fieldA", "==", "bar"),
+                builder.constraint("fieldB", ">=", 2),
+              ],
+              null,
+              sub
+            ),
+            builder.constraint("fieldC", "not in", [1, 2, 3]),
+          ],
+          3
+        )
+      )
+      .add(builder.condition("none", [], 5))
+      .add(
+        builder.condition("any", [builder.constraint("fieldA", "==", "value")])
+      )
+      .default(2)
+      .build(true);
+
+    expect(rule).toEqual({
+      conditions: [
+        {
+          all: [
+            {
+              any: [
+                { field: "fieldA", operator: "==", value: "bar" },
+                { field: "fieldB", operator: ">=", value: 2 },
+              ],
+              rule: {
+                conditions: [
+                  {
+                    all: [{ field: "fieldD", operator: "==", value: "whoop" }],
+                  },
+                ],
+                result: 33,
+              },
+            },
+            { field: "fieldC", operator: "not in", value: [1, 2, 3] },
+          ],
+          result: 3,
+        },
+        { none: [], result: 5 },
+        {
+          any: [{ field: "fieldA", operator: "==", value: "value" }],
+        },
+      ],
+      default: 2,
+    });
+  });
+
   it("Throws an error when validating an invalid ruleset", () => {
     const builder = RulePilot.builder();
     expect(() =>
