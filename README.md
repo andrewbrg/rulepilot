@@ -535,26 +535,14 @@ import { fetchAccount } from './api'
 
 const rule: Rule = {
   conditions: [{
-    all: [{
-      field: "account.balance",
-      operator: ">=",
-      value: 100.00,
-    },
-    {
-      field: "account.age",
-      operator: ">=",
-      value: 18,
-    }],
+    all: [
+      { field: "account.balance", operator: ">=", value: 100.00 },
+      { field: "account.age", operator: ">=", value: 18 }
+    ],
   }],
 };
 
-const criteria = [{
-  account: 123,
-}, {
-  account: 123,
-}, {
-  account: 124,
-}];
+const criteria = [{ account: 123 }, { account: 123 }, { account: 124 }];
 
 // Instantiate a new RulePilot instance (recommended)
 const rulePilot = new RulePilot();
@@ -635,43 +623,19 @@ const rule: Rule = {
       any: [
         {
           all: [
-            {
-              field: "country",
-              operator: "in",
-              value: ["GB", "FI"],
-            },
-            {
-              field: "hasCoupon",
-              operator: "==",
-              value: true,
-            },
-            {
-              field: "totalCheckoutPrice",
-              operator: ">=",
-              value: 120.0,
-            },
+            { field: "country", operator: "in", value: ["GB", "FI"] },
+            { field: "hasCoupon", operator: "==", value: true },
+            { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
           ],
         },
-        {
-          field: "country",
-          operator: "==",
-          value: "SE",
-        },
+        { field: "country", operator: "==", value: "SE" },
       ],
       result: 5,
     },
     {
       all: [
-        {
-          field: "age",
-          operator: ">=",
-          value: 18,
-        },
-        {
-          field: "hasStudentCard",
-          operator: "==",
-          value: true,
-        },
+        { field: "age", operator: ">=", value: 18 },
+        { field: "hasStudentCard", operator: "==", value: true },
       ],
       result: 10,
     },
@@ -691,26 +655,13 @@ The following will be returned in the `introspection` variable:
       "result": 5,
       "options": [
         { "country": "SE" },
-        {
-          "country": ["GB", "FI"],
-          "hasCoupon": true,
-          "totalCheckoutPrice": {
-            "operator": ">=",
-            "value": 120
-          }
-        }
+        { "country": ["GB", "FI"], "hasCoupon": true, "totalCheckoutPrice": { "operator": ">=", "value": 120 } }
       ]
     },
     {
       "result": 10,
       "options": [
-        {
-          "age": {
-            "operator": ">=",
-            "value": 18
-          },
-          "hasStudentCard": true
-        }
+        { "age": { "operator": ">=", "value": 18 }, "hasStudentCard": true }
       ]
     }
   ]
