@@ -102,21 +102,9 @@ import { RulePilot, Rule } from "rulepilot";
 const rule: Rule = {
   conditions: {
     all: [
-      {
-        field: "country",
-        operator: "in",
-        value: ["GB", "FI"],
-      },
-      {
-        field: "hasCoupon",
-        operator: "==",
-        value: true,
-      },
-      {
-        field: "totalCheckoutPrice",
-        operator: ">=",
-        value: 120.0,
-      },
+      { field: "country", operator: "in", value: ["GB", "FI"] },
+      { field: "hasCoupon", operator: "==", value: true },
+      { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
     ],
   },
 };
@@ -136,8 +124,7 @@ let result = await RulePilot.evaluate<boolean>(rule, criteria);
 criteria.totalCheckoutPrice = 25.0;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate<boolean>(rule, criteria);
-// result == false
+result = await RulePilot.evaluate<boolean>(rule, criteria); // result == false
 ```
 
 We can add additional conditions to the rule, for example apart from the above-mentioned conditions, we can also
@@ -153,35 +140,15 @@ const rule: Rule = {
   conditions: [
     {
       all: [
-        {
-          field: "country",
-          operator: "in",
-          value: ["GB", "FI"],
-        },
-        {
-          field: "hasCoupon",
-          operator: "==",
-          value: true,
-        },
-        {
-          field: "totalCheckoutPrice",
-          operator: ">=",
-          value: 120.0,
-        },
+        { field: "country", operator: "in", value: ["GB", "FI"] },
+        { field: "hasCoupon", operator: "==", value: true },
+        { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
       ],
     },
     {
       any: [
-        {
-          field: "age",
-          operator: ">=",
-          value: 18,
-        },
-        {
-          field: "hasStudentCard",
-          operator: "==",
-          value: true,
-        },
+        { field: "age", operator: ">=",  value: 18 },
+        { field: "hasStudentCard", operator: "==", value: true },
       ],
     },
   ],
@@ -195,14 +162,12 @@ const criteria = {
 };
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate<boolean>(rule, criteria);
-// result == false
+let result = await RulePilot.evaluate<boolean>(rule, criteria); // result == false
 
 criteria.hasStudentCard = true;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate<boolean>(rule, criteria);
-// result == true
+result = await RulePilot.evaluate<boolean>(rule, criteria); // result == true
 ```
 
 If we want to add additional requirements to the rule, we can do so by adding another `any` or `all` condition.
@@ -217,42 +182,18 @@ const rule: Rule = {
       any: [
         {
           all: [
-            {
-              field: "country",
-              operator: "in",
-              value: ["GB", "FI"],
-            },
-            {
-              field: "hasCoupon",
-              operator: "==",
-              value: true,
-            },
-            {
-              field: "totalCheckoutPrice",
-              operator: ">=",
-              value: 120.0,
-            },
+            { field: "country", operator: "in", value: ["GB", "FI"] },
+            { field: "hasCoupon", operator: "==", value: true },
+            { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
           ],
         },
-        {
-          field: "country",
-          operator: "==",
-          value: "SE",
-        },
+        { field: "country",  operator: "==", value: "SE" },
       ],
     },
     {
       any: [
-        {
-          field: "age",
-          operator: ">=",
-          value: 18,
-        },
-        {
-          field: "hasStudentCard",
-          operator: "==",
-          value: true,
-        },
+        { field: "age", operator: ">=",  value: 18 },
+        { field: "hasStudentCard", operator: "==", value: true },
       ],
     },
   ],
@@ -269,51 +210,23 @@ const rule: Rule = {
       any: [
         {
           all: [
-            {
-              field: "country",
-              operator: "in",
-              value: ["GB", "FI"],
-            },
-            {
-              field: "hasCoupon",
-              operator: "==",
-              value: true,
-            },
-            {
-              field: "totalCheckoutPrice",
-              operator: ">=",
-              value: 120.0,
-            },
+            { field: "country", operator: "in", value: ["GB", "FI"] },
+            { field: "hasCoupon", operator: "==", value: true },
+            { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
           ],
         },
         {
           any: [
             {
               all: [
-                {
-                  field: "country",
-                  operator: "==",
-                  value: "SE",
-                },
-                {
-                  field: "city",
-                  operator: "not in",
-                  value: ["Stockholm", "Gothenburg"],
-                },
+                { field: "country", operator: "==", value: "SE" },
+                { field: "city", operator: "not in", value: ["Stockholm", "Gothenburg"] },
               ],
             },
             {
               all: [
-                {
-                  field: "country",
-                  operator: "==",
-                  value: "SE",
-                },
-                {
-                  field: "city",
-                  operator: "totalCheckoutPrice",
-                  value: 200.0,
-                },
+                { field: "country",  operator: "==", value: "SE" },
+                { field: "city", operator: "totalCheckoutPrice",  value: 200 },
               ],
             },
           ],
@@ -322,16 +235,8 @@ const rule: Rule = {
     },
     {
       any: [
-        {
-          field: "age",
-          operator: ">=",
-          value: 18,
-        },
-        {
-          field: "hasStudentCard",
-          operator: "==",
-          value: true,
-        },
+        { field: "age", operator: ">=",  value: 18 },
+        { field: "hasStudentCard", operator: "==", value: true },
       ],
     },
   ],
@@ -353,51 +258,23 @@ const rule: Rule = {
       any: [
         {
           all: [
-            {
-              field: "country",
-              operator: "in",
-              value: ["GB", "FI"],
-            },
-            {
-              field: "hasCoupon",
-              operator: "==",
-              value: true,
-            },
-            {
-              field: "totalCheckoutPrice",
-              operator: ">=",
-              value: 120.0,
-            },
+            { field: "country", operator: "in", value: ["GB", "FI"] },
+            { field: "hasCoupon", operator: "==", value: true },
+            { field: "totalCheckoutPrice", operator: ">=", value: 120.0 },
           ],
         },
         {
           any: [
             {
               all: [
-                {
-                  field: "country",
-                  operator: "==",
-                  value: "SE",
-                },
-                {
-                  field: "city",
-                  operator: "not in",
-                  value: ["Stockholm", "Gothenburg"],
-                },
+                { field: "country", operator: "==", value: "SE" },
+                { field: "city", operator: "not in", value: ["Stockholm", "Gothenburg"] },
               ],
             },
             {
               all: [
-                {
-                  field: "country",
-                  operator: "==",
-                  value: "SE",
-                },
-                {
-                  field: "city",
-                  operator: "totalCheckoutPrice",
-                  value: 200.0,
-                },
+                { field: "country",  operator: "==", value: "SE" },
+                { field: "city", operator: "totalCheckoutPrice",  value: 200 },
               ],
             },
           ],
@@ -407,16 +284,8 @@ const rule: Rule = {
     },
     {
       any: [
-        {
-          field: "age",
-          operator: ">=",
-          value: 18,
-        },
-        {
-          field: "hasStudentCard",
-          operator: "==",
-          value: true,
-        },
+        { field: "age", operator: ">=",  value: 18 },
+        { field: "hasStudentCard", operator: "==", value: true },
       ],
       result: 10,
     },
@@ -436,26 +305,21 @@ const criteria = {
   hasCoupon: true,
 };
 
-
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate<number>(rule, criteria);
-// result = 5
+let result = await RulePilot.evaluate<number>(rule, criteria); // result = 5
 
 criteria.country = "SE";
 criteria.city = "Linköping";
 
-
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate<number>(rule, criteria);
-// result = 10
+result = await RulePilot.evaluate<number>(rule, criteria); // result = 10
 
 criteria.country = "IT";
 criteria.age = 17;
 criteria.hasStudentCard = false;
 
 /** Evaluate the new criteria against the rule */
-result = await RulePilot.evaluate<number>(rule, criteria);
-// result = false
+result = await RulePilot.evaluate<number>(rule, criteria); // result = false
 ```
 
 **Important** When using granular rules, the order of conditions in the rule matters!
@@ -480,8 +344,7 @@ const rule: Rule = {
 
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate<number>(rule, {});
-// result = 2.5
+let result = await RulePilot.evaluate<number>(rule, {}); // result = 2.5
 ```
 
 In such a setup as seen above, if no conditions are met, the result will be `2.5`.
@@ -529,23 +392,16 @@ import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
   conditions: {
-    all: [{
-      field: "profile.age",
-      operator: ">=",
-      value: 18,
-    }],
+    all: [{ field: "profile.age",  operator: ">=", value: 18 }],
   },
 };
 
 const criteria = {
-  profile: {
-    age: 20,
-  },
+  profile: { age: 20 },
 };
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, criteria);
-// result = true
+let result = await RulePilot.evaluate(rule, criteria); // result = true
 ```
 
 ### Evaluating Multiple Criteria At Once
@@ -557,30 +413,17 @@ import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
   conditions: {
-    any: [{
-      field: "profile.age",
-      operator: ">=",
-      value: 18,
-    }],
+    all: [{ field: "profile.age",  operator: ">=", value: 18 }],
   },
 };
 
 const criteria = [
-  {
-    profile: {
-      age: 20,
-    },
-  },
-  {
-    profile: {
-      age: 17,
-    },
-  },
+  { profile: { age: 20 } },
+  { profile: { age: 17 } },
 ];
 
 /** Evaluate the criteria against the rule */
-let result = await RulePilot.evaluate(rule, criteria);
-// result = [true, false]
+let result = await RulePilot.evaluate(rule, criteria); // result = [true, false]
 ```
 
 ### Sub Rules
@@ -595,7 +438,7 @@ which will be returned if the following conditions are met:
 - The sub-rule is met
 
 They provide a convenient way to create complex rules with early exit points and avoid repeating the same constraints 
-in multiple places.
+in multiple places. 
 
 An example of a sub-rule can be seen below:
 
@@ -604,48 +447,39 @@ import { RulePilot, Rule } from "rulepilot";
 
 const rule: Rule = {
   conditions: {
-    any: [{
-      field: "profile.age",
-      operator: ">=",
-      value: 18,
-    }, {
-      rule: {
-        conditions: {
-          all: [{ field: "foo", operator: "==", value: 'A' }],
-        },
-        result: 10,
+    any: [
+      { field: "profile.age", operator: ">=",  value: 18 },
+      {
+        rule: {
+          conditions: { all: [{ field: "foo", operator: "==", value: 'A' }] },
+          result: 10
+        }
       },
-    }, {
-      rule: {
-        conditions: {
-          all: [{ field: "foo", operator: "==", value: 'B' }],
+      {
+        rule: {
+          conditions: { all: [{ field: "foo", operator: "==", value: 'B' }] },
+          result: 20
         },
-        result: 20,
-      },
-    }],
-    result: 5,
-  },
+      }
+    ],
+    result: 5
+  }
 };
 
 let criteria = { profile: { age: 20 } }
-let result = await RulePilot.evaluate(rule, criteria);
-// result = 5
+let result = await RulePilot.evaluate(rule, criteria); // result = 5
 
 criteria = { profile: { age: 20 }, foo: 'A' };
-result = await RulePilot.evaluate(rule, criteria);
-// result = 10
+result = await RulePilot.evaluate(rule, criteria); // result = 10
 
 criteria = { profile: { age: 20 }, foo: 'B' };
-result = await RulePilot.evaluate(rule, criteria);
-// result = 20
+result = await RulePilot.evaluate(rule, criteria); // result = 20
 
 criteria = { profile: { age: 20 }, foo: 'C' };
-result = await RulePilot.evaluate(rule, criteria);
-// result = 5
+result = await RulePilot.evaluate(rule, criteria); // result = 5
 
 criteria = { profile: { age: 10 }, foo: 'A' };
-result = await RulePilot.evaluate(rule, criteria);
-// result = false
+result = await RulePilot.evaluate(rule, criteria); // result = false
 ```
 
 
