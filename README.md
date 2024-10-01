@@ -29,7 +29,7 @@ each condition's evaluation.
 - Lightweight with **zero dependencies** & Fast _(10,000 rule evaluations in ~35-40ms)_
 - Fluent rule builder tool (ORM style)
 - Both Simple & Granular rule evaluation
-- Infinite condition nesting
+- Sub-rules & infinitely nested conditions
 - Dynamic criteria mutation
 - Supports Criteria objects with nested properties
 - Rule validation & debugging tools
@@ -889,9 +889,9 @@ yarn build
 Tests are written in Jest and can be run with the following commands:
 
 ```bash
-npm run jest --testPathPattern=test --detectOpenHandles --color --forceExit
+npm run jest --testPathPattern=test --color --forceExit --silent
 ```
 
 ```bash
-yarn jest --testPathPattern=test --detectOpenHandles --color --forceExit
+yarn jest --testPathPattern=test --color --forceExit --silent
 ```

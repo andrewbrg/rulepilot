@@ -72,7 +72,7 @@ export class Introspector {
     // the possible range of input values (in the criteria) which
     // would resolve to the given result. Rules are recursive.
     return {
-      results: this.resolveCriteriaRanges(criteriaRange, conditionMap),
+      results: this.#resolveCriteriaRanges(criteriaRange, conditionMap),
       ...("default" in rule && undefined !== rule.default
         ? { default: rule.default }
         : {}),
@@ -86,7 +86,7 @@ export class Introspector {
    * @param parentType The type of the parent condition.
    * @param depth The current recursion depth.
    */
-  private resolveCriteriaRanges<T>(
+  #resolveCriteriaRanges<T>(
     criteriaRanges: CriteriaRange<T>[],
     conditionMap: Map<T, Condition[]>,
     parentType: ConditionType = null,
@@ -105,7 +105,7 @@ export class Introspector {
 
         // Find the criteria range object for the result
         let criteriaRangeItem = criteriaRanges.find((c) => c.result == result);
-        criteriaRangeItem = this.populateCriteriaRangeOptions<T>(
+        criteriaRangeItem = this.#populateCriteriaRangeOptions<T>(
           criteriaRangeItem,
           condition,
           depth,
@@ -116,7 +116,7 @@ export class Introspector {
         for (const node of condition[type]) {
           if (this.#objectDiscovery.isCondition(node)) {
             const condition = node as Condition;
-            criteriaRangeItem = this.resolveCriteriaRanges<T>(
+            criteriaRangeItem = this.#resolveCriteriaRanges<T>(
               [criteriaRangeItem],
               new Map<T, Condition[]>([[result, [condition]]]),
               type,
@@ -142,7 +142,7 @@ export class Introspector {
    * @param depth The current recursion depth.
    * @param parentType The type of the parent condition.
    */
-  private populateCriteriaRangeOptions<T>(
+  #populateCriteriaRangeOptions<T>(
     criteriaRange: CriteriaRange<T>,
     condition: Condition,
     depth: number,
@@ -165,13 +165,13 @@ export class Introspector {
       // Check if we already have an entry with the same field
       // and if so, update it instead of creating a new one
       let option = options.get(constraint.field) ?? {};
-      option = this.updateCriteriaRangeOptions(option, constraint, type);
+      option = this.#updateCriteriaRangeOptions(option, constraint, type);
       options.set(constraint.field, option);
     }
 
     if (["any", "none"].includes(type)) {
       Array.from(options.values()).forEach((option) => {
-        criteriaRange = this.addOptionToCriteriaRange<T>(
+        criteriaRange = this.#addOptionToCriteriaRange<T>(
           type,
           parentType,
           criteriaRange,
@@ -185,7 +185,7 @@ export class Introspector {
     }
 
     if ("all" === type) {
-      criteriaRange = this.addOptionToCriteriaRange<T>(
+      criteriaRange = this.#addOptionToCriteriaRange<T>(
         type,
         parentType,
         criteriaRange,
@@ -214,7 +214,7 @@ export class Introspector {
    * @param constraint The constraint to update the option with.
    * @param type The current condition type.
    */
-  private updateCriteriaRangeOptions(
+  #updateCriteriaRangeOptions(
     option: Record<string, unknown>,
     constraint: Constraint,
     type: ConditionType
@@ -225,7 +225,7 @@ export class Introspector {
     // We can consider a 'None' as a not 'All' and flip all the operators
     // To be done on any 'None' type condition or on any child
     // of a 'None' type condition.
-    if (type === "none" || this.isCurrentStepChildOf("none")) {
+    if (type === "none" || this.#isCurrentStepChildOf("none")) {
       switch (c.operator) {
         case "==":
           c.operator = "!=";
@@ -329,7 +329,7 @@ export class Introspector {
    * @param option The option to update the criteria range entry with.
    * @param depth The current recursion depth.
    */
-  private addOptionToCriteriaRange<T>(
+  #addOptionToCriteriaRange<T>(
     currType: ConditionType,
     parentType: ConditionType,
     entry: CriteriaRange<T>,
@@ -446,7 +446,7 @@ export class Introspector {
    * of some parent condition with a given type.
    * @param parentType The type of the parent condition.
    */
-  private isCurrentStepChildOf(parentType: ConditionType): boolean {
+  #isCurrentStepChildOf(parentType: ConditionType): boolean {
     if (!this.#steps?.length) {
       return false;
     }

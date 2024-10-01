@@ -1,6 +1,7 @@
 import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
+import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
 
 import { Operator, RulePilot, Condition, Constraint } from "../src";
 
@@ -149,5 +150,9 @@ describe("RulePilot validator correctly", () => {
 
   it("Validates a nested correct rule", () => {
     expect(RulePilot.validate(valid3Json).isValid).toEqual(true);
+  });
+
+  it("Validates a rule with sub rules correctly", async () => {
+    expect(RulePilot.validate(subRulesValid1Json).isValid).toEqual(true);
   });
 });

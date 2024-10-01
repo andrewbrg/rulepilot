@@ -1,4 +1,4 @@
-import { ValidationResult } from "../services/validator";
+import { ValidationResult } from "../services";
 
 export class RuleError extends Error {
   constructor(validationResult: ValidationResult) {

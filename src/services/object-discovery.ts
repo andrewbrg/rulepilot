@@ -1,4 +1,10 @@
-import { Rule, Condition, Constraint, ConditionType } from "../types/rule";
+import {
+  Rule,
+  SubRule,
+  Condition,
+  Constraint,
+  ConditionType,
+} from "../types/rule";
 
 export class ObjectDiscovery {
   /**
@@ -53,6 +59,21 @@ export class ObjectDiscovery {
     return !this.isObject(obj)
       ? false
       : "field" in obj && "operator" in obj && "value" in obj;
+  }
+
+  /**
+   * Checks an object to see if it is a valid sub-rule.
+   * @param obj The object to check.
+   */
+  isSubRule(obj: unknown): obj is { rule: SubRule } {
+    if (!this.isObject(obj)) return false;
+    if (!("rule" in obj)) return false;
+
+    return (
+      this.isObject(obj.rule) &&
+      "conditions" in obj.rule &&
+      "result" in obj.rule
+    );
   }
 
   /**

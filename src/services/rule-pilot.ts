@@ -1,5 +1,5 @@
-import { Builder } from "./builder";
 import { Mutator } from "./mutator";
+import { Builder } from "../builder";
 import { Evaluator } from "./evaluator";
 import { RuleError } from "../types/error";
 import { Introspector } from "./introspector";

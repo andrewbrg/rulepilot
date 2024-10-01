@@ -4,6 +4,7 @@ import { valid3Json } from "./rulesets/valid3.json";
 import { valid5Json } from "./rulesets/valid5.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { invalid2Json } from "./rulesets/invalid2.json";
+import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
 
 import { Operator, RulePilot, RuleError } from "../src";
 
@@ -209,5 +210,51 @@ describe("RulePilot engine correctly", () => {
     expect(
       await RulePilot.evaluate(valid5Json, { states: "invalid criterion type" })
     ).toEqual(false);
+  });
+
+  it("Evaluates a rule with nested results", async () => {
+    expect(
+      await RulePilot.evaluate(subRulesValid1Json, {
+        CountryIso: "GB",
+        Leverage: 1000,
+        Monetization: "Real",
+      })
+    ).toEqual(12);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid1Json, {
+        CountryIso: "GB",
+        Leverage: 1000,
+        Monetization: "Real",
+        Category: 910,
+      })
+    ).toEqual(13);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid1Json, {
+        CountryIso: "GB",
+        Leverage: 1000,
+        Monetization: "Real",
+        Category: 900,
+      })
+    ).toEqual(13);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid1Json, {
+        CountryIso: "GB",
+        Leverage: 500,
+        Monetization: "Real",
+        Category: 900,
+      })
+    ).toEqual(3);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid1Json, {
+        CountryIso: "GB",
+        Leverage: 333,
+        Monetization: "Real",
+        Category: "Islamic",
+      })
+    ).toEqual(4);
   });
 });

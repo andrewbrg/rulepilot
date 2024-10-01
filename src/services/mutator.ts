@@ -60,7 +60,7 @@ export class Mutator {
     const exec = async (criteria: object | object[]) => {
       // If there are no mutations or the criteria does not contain
       // any of the mutation keys, return the criteria as is.
-      if (!this.#mutations.size || !this.hasMutations(criteria)) {
+      if (!this.#mutations.size || !this.#hasMutations(criteria)) {
         return criteria;
       }
 
@@ -68,7 +68,7 @@ export class Mutator {
       const copy = { ...criteria };
 
       // Apply the mutations to the copy and return it.
-      await this.applyMutations(copy);
+      await this.#applyMutations(copy);
       return copy;
     };
 
@@ -94,7 +94,7 @@ export class Mutator {
    * @param result Whether a mutate-able property has been found.
    * @param parentPath The parent path to the current property.
    */
-  private hasMutations(
+  #hasMutations(
     criteria: object,
     result: boolean = false,
     parentPath: string = ""
@@ -110,7 +110,7 @@ export class Mutator {
 
       // If the value is an object, we should recurse.
       result = this.#objectDiscovery.isObject(criteria[key])
-        ? result || this.hasMutations(criteria[key], result, path)
+        ? result || this.#hasMutations(criteria[key], result, path)
         : result || this.#mutations.has(path);
     }
 
@@ -122,7 +122,7 @@ export class Mutator {
    * @param criteria The criteria to mutate.
    * @param parentPath The parent path to the current property.
    */
-  private async applyMutations(
+  async #applyMutations(
     criteria: object,
     parentPath: string = ""
   ): Promise<void> {
@@ -133,11 +133,11 @@ export class Mutator {
           const path = parentPath ? `${parentPath}.${key}` : key;
 
           if (this.#objectDiscovery.isObject(criteria[key])) {
-            await this.applyMutations(criteria[key], path);
+            await this.#applyMutations(criteria[key], path);
           }
 
           if (this.#mutations.has(path)) {
-            criteria[key] = await this.execMutation(key, criteria, path);
+            criteria[key] = await this.#execMutation(key, criteria, path);
           }
 
           resolve(criteria[key]);
@@ -154,7 +154,7 @@ export class Mutator {
    * @param criteria The criteria to execute the mutation with.
    * @param mutationKey The key of the mutation to execute.
    */
-  private async execMutation(
+  async #execMutation(
     criteriaProp: string,
     criteria: unknown,
     mutationKey: string

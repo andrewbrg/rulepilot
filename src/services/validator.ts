@@ -10,7 +10,7 @@ export interface ValidationResult {
 }
 
 export class Validator {
-  private objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
+  #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
 
   /**
    * Takes in a rule as a parameter and returns a boolean indicating whether the rule is valid or not.
@@ -21,7 +21,7 @@ export class Validator {
     const result: ValidationResult = { isValid: true };
 
     // Check the rule is a valid JSON
-    if (!this.objectDiscovery.isObject(rule)) {
+    if (!this.#objectDiscovery.isObject(rule)) {
       return {
         isValid: false,
         error: {
@@ -38,7 +38,7 @@ export class Validator {
     // Validate the 'conditions' property.
     if (
       conditions.length === 0 ||
-      (this.objectDiscovery.isObject(conditions[0]) &&
+      (this.#objectDiscovery.isObject(conditions[0]) &&
         !Object.keys(conditions[0]).length)
     ) {
       return {
@@ -53,7 +53,7 @@ export class Validator {
 
     // Validate each condition in the rule.
     for (const condition of conditions) {
-      const subResult = this.validateCondition(condition);
+      const subResult = this.#validateCondition(condition);
       result.isValid = result.isValid && subResult.isValid;
       result.error = result?.error ?? subResult?.error;
     }
@@ -61,23 +61,23 @@ export class Validator {
     return result;
   }
 
-  /** ml/l.k,
+  /**
    * Evaluates a condition to ensure it is syntactically correct.
    * @param condition The condition to validate.
    * @param depth The current recursion depth
    */
-  private validateCondition(
+  #validateCondition(
     condition: Condition,
     depth: number = 0
   ): ValidationResult {
     // Check to see if the condition is valid.
-    const result = this.isValidCondition(condition);
+    const result = this.#isValidCondition(condition);
     if (!result.isValid) {
       return result;
     }
 
     // Set the type of condition.
-    const type = this.objectDiscovery.conditionType(condition);
+    const type = this.#objectDiscovery.conditionType(condition);
 
     // Check if the condition is iterable
     if (!Array.isArray(condition[type])) {
@@ -92,16 +92,22 @@ export class Validator {
 
     // Validate each item in the condition.
     for (const node of condition[type]) {
-      const isCondition = this.objectDiscovery.isCondition(node);
+      // If the object is a sub-rule, we should validate it as a new rule
+      if (this.#objectDiscovery.isSubRule(node)) {
+        return this.validate(node.rule);
+      }
+
+      // Otherwise, the object should be a condition or constraint.
+      const isCondition = this.#objectDiscovery.isCondition(node);
       if (isCondition) {
-        const subResult = this.validateCondition(node as Condition, depth + 1);
+        const subResult = this.#validateCondition(node as Condition, depth + 1);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
       }
 
-      const isConstraint = this.objectDiscovery.isConstraint(node);
+      const isConstraint = this.#objectDiscovery.isConstraint(node);
       if (isConstraint) {
-        const subResult = this.validateConstraint(node as Constraint);
+        const subResult = this.#validateConstraint(node as Constraint);
         result.isValid = result.isValid && subResult.isValid;
         result.error = result?.error ?? subResult?.error;
       }
@@ -110,7 +116,7 @@ export class Validator {
         return {
           isValid: false,
           error: {
-            message: "Each node should be a condition or constraint.",
+            message: "Each node should be a condition, constraint or sub rule.",
             element: node,
           },
         };
@@ -140,7 +146,7 @@ export class Validator {
    * Checks a constraint to ensure it is syntactically correct.
    * @param constraint The constraint to validate.
    */
-  private validateConstraint(constraint: Constraint): ValidationResult {
+  #validateConstraint(constraint: Constraint): ValidationResult {
     if ("string" !== typeof constraint.field) {
       return {
         isValid: false,
@@ -216,8 +222,9 @@ export class Validator {
    * Checks an object to see if it is a valid condition.
    * @param obj The object to check.
    */
-  private isValidCondition(obj: any): ValidationResult {
-    if (!this.objectDiscovery.isCondition(obj)) {
+  #isValidCondition(obj: any): ValidationResult {
+    // Otherwise, the object should be a condition.
+    if (!this.#objectDiscovery.isCondition(obj)) {
       return {
         isValid: false,
         error: {
