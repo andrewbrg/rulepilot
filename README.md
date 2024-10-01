@@ -583,6 +583,72 @@ let result = await RulePilot.evaluate(rule, criteria);
 // result = [true, false]
 ```
 
+### Sub Rules
+
+Sub-rules can be used to create early exit points rules by assigning a `rule` property to a condition. This rule property
+will contain a new rule in itself which will be evaluated if the constraints of the host condition are met.
+
+Sub-rules do not need to evaluate to true for their parent condition to pass evaluation. They contain their own result 
+which will be returned if the following conditions are met:
+
+- The parent condition (all criteria and/or nested rules) are met
+- The sub-rule is met
+
+They provide a convenient way to create complex rules with early exit points and avoid repeating the same constraints 
+in multiple places.
+
+An example of a sub-rule can be seen below:
+
+```typescript
+import { RulePilot, Rule } from "rulepilot";
+
+const rule: Rule = {
+  conditions: {
+    any: [{
+      field: "profile.age",
+      operator: ">=",
+      value: 18,
+    }, {
+      rule: {
+        conditions: {
+          all: [{ field: "foo", operator: "==", value: 'A' }],
+        },
+        result: 10,
+      },
+    }, {
+      rule: {
+        conditions: {
+          all: [{ field: "foo", operator: "==", value: 'B' }],
+        },
+        result: 20,
+      },
+    }],
+    result: 5,
+  },
+};
+
+let criteria = { profile: { age: 20 } }
+let result = await RulePilot.evaluate(rule, criteria);
+// result = 5
+
+criteria = { profile: { age: 20 }, foo: 'A' };
+result = await RulePilot.evaluate(rule, criteria);
+// result = 10
+
+criteria = { profile: { age: 20 }, foo: 'B' };
+result = await RulePilot.evaluate(rule, criteria);
+// result = 20
+
+criteria = { profile: { age: 20 }, foo: 'C' };
+result = await RulePilot.evaluate(rule, criteria);
+// result = 5
+
+criteria = { profile: { age: 10 }, foo: 'A' };
+result = await RulePilot.evaluate(rule, criteria);
+// result = false
+```
+
+
 ## Validating A Rule
 
 Validation can be performed on a rule to ensure it is valid and properly structured.
@@ -850,25 +916,81 @@ The `default()` method allows for the addition of a default value result for the
 ```typescript
 import { RulePilot, Rule } from "rulepilot";
 
-const b = RulePilot.builder();
+const builder = RulePilot.builder();
 
-const rule: Rule = b
+const rule: Rule = builder
   .add(
-    b.condition(
+    builder.condition(
       "all",
       [
-        b.condition("any", [
-          b.constraint("fieldA", "==", "bar"),
-          b.constraint("fieldB", ">=", 2),
+        builder.condition("any", [
+          builder.constraint("size", "==", "medium"),
+          builder.constraint("weight", ">=", 2),
         ]),
-        b.constraint("fieldC", "not in", [1, 2, 3]),
+        builder.constraint("category", "not in", ["free", "out of stock"]),
       ],
-      3
+      { price: 20 }
     )
   )
-  .add(b.condition("none", [], 5))
-  .add(b.condition("any", [b.constraint("fieldA", "==", "value")]))
-  .default(2)
+  .add(
+    builder.condition(
+      "any",
+      [
+        builder.constraint("size", "==", "small"),
+        builder.constraint("weight", "<", "2"),
+      ],
+      { price: 10 }
+    )
+  )
+  .default({ price: 5 })
+  .build();
+```
+
+### Adding Sub Rules in the builder
+
+```typescript
+import { RulePilot, Rule } from "rulepilot";
+
+const builder = RulePilot.builder();
+
+const subRule = builder.subRule();
+subRule.add(
+  subRule.condition(
+    "all",
+    [
+      subRule.constraint("color", "==", "green"),
+      subRule.constraint("discount", ">", 20),
+    ], 
+    { price: 10 }
+  )
+);
+
+const rule: Rule = builder
+  .add(
+    builder.condition(
+      "all",
+      [
+        builder.condition("any", [
+          builder.constraint("size", "==", "medium"),
+          builder.constraint("weight", ">=", 2),
+        ]),
+        builder.constraint("category", "not in", ["free", "out of stock"]),
+      ],
+      { price: 20 },
+      subRule
+    )
+  )
+  .add(
+    builder.condition(
+      "any",
+      [
+        builder.constraint("size", "==", "small"),
+        builder.constraint("weight", "<", "2"),
+      ],
+      { price: 10 }
+    )
+  )
+  .default({ price: 5 })
   .build();
 ```
 
