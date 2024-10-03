@@ -1,7 +1,7 @@
 import { Mutator } from "./mutator";
 import { Builder } from "../builder";
+import { RuleError } from "../errors";
 import { Evaluator } from "./evaluator";
-import { RuleError } from "../types/error";
 import { Introspector } from "./introspector";
 import { Validator, ValidationResult } from "./validator";
 import { Rule, IntrospectionResult } from "../types/rule";

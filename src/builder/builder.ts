@@ -5,8 +5,8 @@ import {
   Constraint,
   ConditionType,
 } from "../types/rule";
+import { RuleError } from "../errors";
 import { Validator } from "../services";
-import { RuleError } from "../types/error";
 import { SubRuleBuilder } from "./sub-rule-builder";
 
 export class Builder {

@@ -7,7 +7,7 @@ import {
   IntrospectionResult,
 } from "../types/rule";
 import { Logger } from "./logger";
-import { RuleTypeError } from "../types/error";
+import { RuleTypeError } from "../errors";
 import { ObjectDiscovery } from "./object-discovery";
 
 interface IntrospectionStep {
@@ -21,6 +21,11 @@ interface IntrospectionStep {
   }[];
 }
 
+/**
+ * Introspection deals with the process of examining the constraints and conditions of a rule to determine all the
+ * possible range of input criteria which would satisfy the rule along with the result of the rule that would be
+ * produced by the criteria.
+ */
 export class Introspector {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
   #steps: IntrospectionStep[];
