@@ -1,5 +1,5 @@
 import { ObjectDiscovery } from "./object-discovery";
-import { Rule, Operator, Condition, Constraint } from "../types/rule";
+import { Rule, Operator, Condition, Constraint } from "../types";
 
 export interface ValidationResult {
   isValid: boolean;

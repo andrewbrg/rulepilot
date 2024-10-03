@@ -1,10 +1,4 @@
-import {
-  Rule,
-  SubRule,
-  Condition,
-  Constraint,
-  ConditionType,
-} from "../types/rule";
+import { Rule, SubRule, Condition, Constraint, ConditionType } from "../types";
 
 export class ObjectDiscovery {
   /**

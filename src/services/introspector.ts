@@ -5,7 +5,7 @@ import {
   CriteriaRange,
   ConditionType,
   IntrospectionResult,
-} from "../types/rule";
+} from "../types";
 import { Logger } from "./logger";
 import { RuleTypeError } from "../errors";
 import { ObjectDiscovery } from "./object-discovery";
@@ -55,11 +55,8 @@ export class Introspector {
     // it to create a map of results to conditions
     const conditionMap = new Map<T, Condition[]>();
     for (const condition of conditions) {
-      const result = condition.result;
-      const data = conditionMap.get(result) ?? [];
-      if (!data.length) {
-        conditionMap.set(result, data);
-      }
+      const data = conditionMap.get(condition.result) ?? [];
+      if (!data.length) conditionMap.set(condition.result, data);
 
       data.push(condition);
     }
@@ -67,10 +64,7 @@ export class Introspector {
     // Using this information we can build the skeleton of the introspected criteria range
     const criteriaRange: CriteriaRange<T>[] = [];
     for (const result of conditionMap.keys()) {
-      criteriaRange.push({
-        result,
-        options: [],
-      });
+      criteriaRange.push({ result, options: [] });
     }
 
     // For we need to populate each item in the `criteriaRange` with
@@ -102,9 +96,7 @@ export class Introspector {
       // For each condition in that set
       for (const condition of conditions) {
         const type = this.#objectDiscovery.conditionType(condition);
-        if (!type) {
-          continue;
-        }
+        if (!type) continue;
 
         Logger.debug(`\nIntrospector: Introspecting result "${result}"`);
 

@@ -3,8 +3,8 @@ import { Builder } from "../builder";
 import { RuleError } from "../errors";
 import { Evaluator } from "./evaluator";
 import { Introspector } from "./introspector";
+import { Rule, IntrospectionResult } from "../types";
 import { Validator, ValidationResult } from "./validator";
-import { Rule, IntrospectionResult } from "../types/rule";
 
 export class RulePilot {
   static #rulePilot = new RulePilot();

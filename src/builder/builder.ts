@@ -1,13 +1,7 @@
-import {
-  Rule,
-  Operator,
-  Condition,
-  Constraint,
-  ConditionType,
-} from "../types/rule";
 import { RuleError } from "../errors";
 import { Validator } from "../services";
 import { SubRuleBuilder } from "./sub-rule-builder";
+import { Rule, Operator, Condition, Constraint, ConditionType } from "../types";
 
 export class Builder {
   constructor(validator: Validator) {

@@ -4,7 +4,7 @@ import {
   Condition,
   Constraint,
   ConditionType,
-} from "../types/rule";
+} from "../types";
 
 export class SubRuleBuilder {
   /** Stores the rule being constructed */
