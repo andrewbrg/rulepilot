@@ -5,6 +5,7 @@ import { valid5Json } from "./rulesets/valid5.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { invalid2Json } from "./rulesets/invalid2.json";
 import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
+import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
 import { Operator, RulePilot, RuleError } from "../src";
 
@@ -212,7 +213,7 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(false);
   });
 
-  it("Evaluates a rule with nested results", async () => {
+  it("Evaluates a rule with sub-rules", async () => {
     expect(
       await RulePilot.evaluate(subRulesValid1Json, {
         CountryIso: "GB",
@@ -256,5 +257,16 @@ describe("RulePilot engine correctly", () => {
         Category: "Islamic",
       })
     ).toEqual(4);
+  });
+
+  it("Evaluates a rule with sub-rules where the parent condition has a nested rule", async () => {
+    expect(
+      await RulePilot.evaluate(subRulesValid2Json, {
+        Category: "Demo",
+        Leverage: 600,
+        CountryIso: "GB",
+        Monetization: "Real",
+      })
+    ).toEqual(12);
   });
 });

@@ -117,22 +117,29 @@ export class Evaluator {
     )?.rule;
     if (!subRule) return;
 
-    // Check if all the parent constraints pass
-    let constraintsPass: boolean | undefined = undefined;
+    // Check if all the sibling conditions and constraints pass
+    let siblingsPass: boolean | undefined = undefined;
     for (const node of condition[type]) {
-      if (this.#objectDiscovery.isCondition(node)) continue;
       if (this.#objectDiscovery.isSubRule(node)) continue;
 
+      if (this.#objectDiscovery.isCondition(node)) {
+        siblingsPass = this.#accumulate(
+          type,
+          () => this.#evaluateCondition(node, criteria),
+          siblingsPass
+        );
+      }
+
       if (this.#objectDiscovery.isConstraint(node)) {
-        constraintsPass = this.#accumulate(
+        siblingsPass = this.#accumulate(
           type,
           () => this.#checkConstraint(node, criteria),
-          constraintsPass
+          siblingsPass
         );
       }
     }
 
-    if (!constraintsPass) return;
+    if (!siblingsPass) return;
 
     // Evaluate the sub-rule
     const passed = this.#evaluateRule(

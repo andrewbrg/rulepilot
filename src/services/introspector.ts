@@ -1,5 +1,6 @@
 import {
   Rule,
+  SubRule,
   Condition,
   Constraint,
   CriteriaRange,
@@ -15,10 +16,12 @@ interface IntrospectionStep {
   currType: ConditionType;
   depth: number;
   option: Record<string, unknown>;
-  changes?: {
-    key: string;
-    value: unknown;
-  }[];
+  changes?: { key: string; value: unknown }[];
+}
+
+interface SubRuleResult {
+  parent: Condition;
+  subRule: SubRule;
 }
 
 /**
@@ -37,23 +40,73 @@ export class Introspector {
    * @param rule The rule to evaluate.
    * @throws RuleTypeError if the rule is not granular
    */
-  introspect<T>(rule: Rule): IntrospectionResult<T> {
+  introspect<R>(rule: Rule): IntrospectionResult<R> {
     // The ruleset needs to be granular for this operation to work
     if (!this.#objectDiscovery.isGranular(rule)) {
-      throw new RuleTypeError(
-        "The provided rule is not granular. A granular rule is required for Introspection"
+      throw new RuleTypeError("Introspection requires granular rules.");
+    }
+
+    // Find any conditions which contain sub-rules
+    let subRuleResults: SubRuleResult[] = [];
+    for (const condition of this.#asArray(rule.conditions)) {
+      subRuleResults = subRuleResults.concat(
+        this.#findSubRules(condition, condition)
       );
     }
 
+    console.log(JSON.stringify(subRuleResults));
+    for (const subRule of subRuleResults) {
+      console.log(JSON.stringify(this.#flatten(subRule.parent)));
+    }
+
+    let results = this.#introspectRule<R>(rule);
+
+    // Construct a new rule from each sub-rule result
+    for (const subRuleResult of subRuleResults) {
+      const res = this.#flatten(subRuleResult.parent);
+      for (const condition of this.#asArray(subRuleResult.subRule.conditions)) {
+        res.all.push(condition);
+      }
+
+      console.log(
+        JSON.stringify({
+          conditions: {
+            ...res,
+            result: subRuleResult.subRule.result,
+          },
+        })
+      );
+
+      results = results.concat(
+        this.#introspectRule<R>({
+          conditions: {
+            ...res,
+            result: subRuleResult.subRule.result,
+          },
+        })
+      );
+    }
+
+    return {
+      results,
+      ...("default" in rule && undefined !== rule.default
+        ? { default: rule.default }
+        : {}),
+    };
+  }
+
+  /**
+   * Runs the introspection process on a rule to determine the possible range of input criteria
+   * @param rule The rule to introspect.
+   */
+  #introspectRule<R>(rule: Rule): CriteriaRange<R>[] {
     // Initialize a clean steps array each time we introspect
     this.#steps = [];
-
-    const conditions =
-      rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
+    const conditions = this.#asArray(rule.conditions);
 
     // Then we map each result to the condition that produces
     // it to create a map of results to conditions
-    const conditionMap = new Map<T, Condition[]>();
+    const conditionMap = new Map<R, Condition[]>();
     for (const condition of conditions) {
       const data = conditionMap.get(condition.result) ?? [];
       if (!data.length) conditionMap.set(condition.result, data);
@@ -62,20 +115,200 @@ export class Introspector {
     }
 
     // Using this information we can build the skeleton of the introspected criteria range
-    const criteriaRange: CriteriaRange<T>[] = [];
+    const criteriaRange: CriteriaRange<R>[] = [];
     for (const result of conditionMap.keys()) {
       criteriaRange.push({ result, options: [] });
     }
 
-    // For we need to populate each item in the `criteriaRange` with
+    // We need to populate each item in the `criteriaRange` with
     // the possible range of input values (in the criteria) which
     // would resolve to the given result. Rules are recursive.
-    return {
-      results: this.#resolveCriteriaRanges(criteriaRange, conditionMap),
-      ...("default" in rule && undefined !== rule.default
-        ? { default: rule.default }
-        : {}),
-    };
+    return this.#resolveCriteriaRanges(criteriaRange, conditionMap);
+  }
+
+  /**
+   * Recursively finds all sub-rules in a condition.
+   * @param condition The condition to search.
+   * @param root The root condition which holds the condition to search.
+   * @param results The results array to populate.
+   */
+  #findSubRules(
+    condition: Condition,
+    root: Condition,
+    results: SubRuleResult[] = []
+  ): SubRuleResult[] {
+    // Find the type of the condition
+    const type = this.#objectDiscovery.conditionType(condition);
+
+    // Iterate each node in the condition
+    for (const node of condition[type]) {
+      if (this.#objectDiscovery.isSubRule(node)) {
+        results.push({
+          parent: this.#removeSubRule(node.rule, root),
+          subRule: {
+            conditions: this.#stripAllSubRules(node.rule.conditions),
+            result: node.rule.result,
+          },
+        });
+
+        // Recursively find sub-rules within the sub-rule
+        for (const condition of this.#asArray(node.rule.conditions)) {
+          results = this.#findSubRules(condition, root, results);
+        }
+      }
+
+      // Recursively find sub-rules within the condition
+      if (this.#objectDiscovery.isCondition(node)) {
+        results = this.#findSubRules(node, root, results);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Remove the provided sub-rule needle from the haystack condition
+   * @param needle The sub-rule to remove.
+   * @param haystack The condition to search in and remove the sub-rule from.
+   */
+  #removeSubRule(needle: SubRule, haystack: Condition): Condition {
+    // Clone the root condition so that we can modify it
+    const clone = JSON.parse(JSON.stringify(haystack));
+
+    // Find the type of the condition
+    const type = this.#objectDiscovery.conditionType(clone);
+
+    // Iterate over each node in the condition
+    for (let i = 0; i < clone[type].length; i++) {
+      const node = clone[type][i];
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        clone[type][i] = this.#removeSubRule(needle, node);
+      }
+
+      // If the node is a sub-rule
+      if (this.#objectDiscovery.isSubRule(node)) {
+        if (needle.result === 13) {
+          console.log(node.rule);
+          console.log("asdasda", this.existsIn(needle, node.rule.conditions));
+        }
+
+        if (!this.existsIn(needle, node.rule)) {
+          clone[type].splice(i, 1);
+          continue;
+        }
+
+        // Check if it is the sub-rule we are looking for
+        if (JSON.stringify(node.rule) === JSON.stringify(needle)) {
+          clone[type].splice(i, 1);
+          continue;
+        }
+
+        // Otherwise, recurse into the sub-rule
+        clone[type][i].rule.conditions = clone[type][i].rule.conditions.map(
+          (c: Condition) => this.#removeSubRule(needle, c)
+        );
+      }
+    }
+
+    return clone;
+  }
+
+  /**
+   * Checks if a sub-rule exists in a given haystack.
+   * @param needle The sub-rule to search for.
+   * @param haystack The condition to search in.
+   * @param found A flag to indicate if the sub-rule has been found.
+   */
+  existsIn(
+    needle: SubRule,
+    haystack: unknown,
+    found: boolean = false
+  ): boolean {
+    if (found) return true;
+
+    // Otherwise, recurse into the sub-rule
+    for (const node of this.#asArray(haystack)) {
+      // If the node is a sub-rule
+      if (this.#objectDiscovery.isSubRule(node)) {
+        // Check if it is the sub-rule we are looking for
+        if (JSON.stringify(needle) === JSON.stringify(node.rule)) return true;
+        // Otherwise, recurse into the sub-rule
+        found = this.existsIn(needle, node.rule.conditions, found);
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        const type = this.#objectDiscovery.conditionType(node);
+        found = this.existsIn(needle, node[type], found);
+      }
+    }
+
+    return found;
+  }
+
+  /**
+   * Removes all sub-rules from a condition or array of conditions.
+   * @param conditions The conditions to remove sub-rules from.
+   */
+  #stripAllSubRules<R = Condition | Condition[]>(conditions: R): R | undefined {
+    // Clone the conditions array so that we can modify it
+    const clone = JSON.parse(JSON.stringify(this.#asArray(conditions)));
+
+    // Iterate over each condition in the array
+    for (let i = 0; i < clone.length; i++) {
+      // Find the type of the condition
+      const type = this.#objectDiscovery.conditionType(clone[i]);
+
+      // Iterate over each node in the condition
+      for (let j = 0; j < clone[i][type].length; j++) {
+        const node = clone[i][type][j];
+
+        // If the node is a condition, recurse
+        if (this.#objectDiscovery.isCondition(node)) {
+          const res = this.#stripAllSubRules<Condition>(node);
+          if (res) clone[i][type][j] = res;
+          else clone[i][type].splice(j, 1);
+        }
+
+        // If the node is a sub-rule, remove it
+        if (this.#objectDiscovery.isSubRule(node)) clone[i][type].splice(j, 1);
+      }
+    }
+
+    return Array.isArray(conditions) ? (clone as R) : (clone[0] as R);
+  }
+
+  /**
+   * Flattens a condition or set of conditions into a single object.
+   * @param conditions The conditions to flatten.
+   * @param result The result object to populate.
+   */
+  #flatten(
+    conditions: Condition | Condition[],
+    result: Condition = { all: [] }
+  ): Condition {
+    // Clone the conditions array so that we can modify it
+    const clone = JSON.parse(JSON.stringify(this.#asArray(conditions)));
+
+    for (const condition of clone) {
+      const items = [];
+
+      const type = this.#objectDiscovery.conditionType(condition);
+      for (const node of condition[type]) {
+        if (this.#objectDiscovery.isSubRule(node)) {
+          result = this.#flatten(node.rule.conditions, result);
+          continue;
+        }
+
+        items.push(node);
+      }
+
+      result.all.push({ [type]: items });
+    }
+
+    return result;
   }
 
   /**
@@ -85,12 +318,12 @@ export class Introspector {
    * @param parentType The type of the parent condition.
    * @param depth The current recursion depth.
    */
-  #resolveCriteriaRanges<T>(
-    criteriaRanges: CriteriaRange<T>[],
-    conditionMap: Map<T, Condition[]>,
+  #resolveCriteriaRanges<R>(
+    criteriaRanges: CriteriaRange<R>[],
+    conditionMap: Map<R, Condition[]>,
     parentType: ConditionType = null,
     depth: number = 0
-  ): CriteriaRange<T>[] {
+  ): CriteriaRange<R>[] {
     // For each set of conditions which produce the same result
     for (const [result, conditions] of conditionMap) {
       // For each condition in that set
@@ -102,7 +335,7 @@ export class Introspector {
 
         // Find the criteria range object for the result
         let criteriaRangeItem = criteriaRanges.find((c) => c.result == result);
-        criteriaRangeItem = this.#populateCriteriaRangeOptions<T>(
+        criteriaRangeItem = this.#populateCriteriaRangeOptions<R>(
           criteriaRangeItem,
           condition,
           depth,
@@ -113,9 +346,9 @@ export class Introspector {
         for (const node of condition[type]) {
           if (this.#objectDiscovery.isCondition(node)) {
             const condition = node as Condition;
-            criteriaRangeItem = this.#resolveCriteriaRanges<T>(
+            criteriaRangeItem = this.#resolveCriteriaRanges<R>(
               [criteriaRangeItem],
-              new Map<T, Condition[]>([[result, [condition]]]),
+              new Map<R, Condition[]>([[result, [condition]]]),
               type,
               depth + 1
             ).pop();
@@ -139,12 +372,12 @@ export class Introspector {
    * @param depth The current recursion depth.
    * @param parentType The type of the parent condition.
    */
-  #populateCriteriaRangeOptions<T>(
-    criteriaRange: CriteriaRange<T>,
+  #populateCriteriaRangeOptions<R>(
+    criteriaRange: CriteriaRange<R>,
     condition: Condition,
     depth: number,
     parentType?: ConditionType
-  ): CriteriaRange<T> {
+  ): CriteriaRange<R> {
     const type = this.#objectDiscovery.conditionType(condition);
     const options = new Map<string, Record<string, unknown>>();
 
@@ -168,7 +401,7 @@ export class Introspector {
 
     if (["any", "none"].includes(type)) {
       Array.from(options.values()).forEach((option) => {
-        criteriaRange = this.#addOptionToCriteriaRange<T>(
+        criteriaRange = this.#addOptionToCriteriaRange<R>(
           type,
           parentType,
           criteriaRange,
@@ -182,7 +415,7 @@ export class Introspector {
     }
 
     if ("all" === type) {
-      criteriaRange = this.#addOptionToCriteriaRange<T>(
+      criteriaRange = this.#addOptionToCriteriaRange<R>(
         type,
         parentType,
         criteriaRange,
@@ -326,13 +559,13 @@ export class Introspector {
    * @param option The option to update the criteria range entry with.
    * @param depth The current recursion depth.
    */
-  #addOptionToCriteriaRange<T>(
+  #addOptionToCriteriaRange<R>(
     currType: ConditionType,
     parentType: ConditionType,
-    entry: CriteriaRange<T>,
+    entry: CriteriaRange<R>,
     option: Record<string, unknown>,
     depth: number
-  ): CriteriaRange<T> {
+  ): CriteriaRange<R> {
     const lastIdx = entry.options.length - 1;
 
     // We create new objects in the options array
@@ -461,6 +694,14 @@ export class Introspector {
     }
 
     return false;
+  }
+
+  /**
+   * Converts a value to an array if it is not already an array.
+   * @param value The value to convert.
+   */
+  #asArray<R = any>(value: R | R[]): R[] {
+    return Array.isArray(value) ? value : [value];
   }
 
   /** Returns the last step in the introspection process. */
