@@ -54,11 +54,6 @@ export class Introspector {
       );
     }
 
-    console.log(JSON.stringify(subRuleResults));
-    for (const subRule of subRuleResults) {
-      console.log(JSON.stringify(this.#flatten(subRule.parent)));
-    }
-
     let results = this.#introspectRule<R>(rule);
 
     // Construct a new rule from each sub-rule result
@@ -68,14 +63,15 @@ export class Introspector {
         res.all.push(condition);
       }
 
-      console.log(
-        JSON.stringify({
-          conditions: {
-            ...res,
-            result: subRuleResult.subRule.result,
-          },
-        })
-      );
+      // console.log(
+      //   `Rule ${subRuleResult.subRule.result}:`,
+      //   JSON.stringify({
+      //     conditions: {
+      //       ...res,
+      //       result: subRuleResult.subRule.result,
+      //     },
+      //   })
+      // );
 
       results = results.concat(
         this.#introspectRule<R>({
@@ -185,30 +181,24 @@ export class Introspector {
       // If the node is a condition, recurse
       if (this.#objectDiscovery.isCondition(node)) {
         clone[type][i] = this.#removeSubRule(needle, node);
+        continue;
       }
 
       // If the node is a sub-rule
       if (this.#objectDiscovery.isSubRule(node)) {
-        if (needle.result === 13) {
-          console.log(node.rule);
-          console.log("asdasda", this.existsIn(needle, node.rule.conditions));
-        }
-
-        if (!this.existsIn(needle, node.rule)) {
-          clone[type].splice(i, 1);
-          continue;
-        }
-
-        // Check if it is the sub-rule we are looking for
-        if (JSON.stringify(node.rule) === JSON.stringify(needle)) {
+        if (!this.existsIn(needle, node.rule.conditions)) {
           clone[type].splice(i, 1);
           continue;
         }
 
         // Otherwise, recurse into the sub-rule
-        clone[type][i].rule.conditions = clone[type][i].rule.conditions.map(
-          (c: Condition) => this.#removeSubRule(needle, c)
-        );
+        const conditions = this.#asArray(node.rule.conditions);
+        for (let j = 0; j < conditions.length; j++) {
+          clone[type][i].rule.conditions[j] = this.#removeSubRule(
+            needle,
+            conditions[j]
+          );
+        }
       }
     }
 
@@ -621,7 +611,7 @@ export class Introspector {
         });
 
         Logger.debug(
-          `Introspector: + new option to criteria range based on last root parent"`
+          `Introspector: + new option to criteria range based on last root parent`
         );
 
         entry.options.push(baseOption);
@@ -665,7 +655,7 @@ export class Introspector {
     }
 
     this.#steps.push({ parentType, currType, depth, option });
-    Logger.debug(`Introspector: + new option to criteria range"`);
+    Logger.debug(`Introspector: + new option to criteria range`);
 
     entry.options.push(option);
     return entry;
