@@ -726,18 +726,6 @@ import { RulePilot, Rule } from "rulepilot";
 
 const builder = RulePilot.builder();
 
-const subRule = builder.subRule();
-subRule.add(
-  subRule.condition(
-    "all",
-    [
-      subRule.constraint("color", "==", "green"),
-      subRule.constraint("discount", ">", 20),
-    ], 
-    { price: 10 }
-  )
-);
-
 const rule: Rule = builder
   .add(
     builder.condition(
@@ -746,11 +734,15 @@ const rule: Rule = builder
         builder.condition("any", [
           builder.constraint("size", "==", "medium"),
           builder.constraint("weight", ">=", 2),
+          builder.condition(
+            "all", 
+            [builder.constraint("color", "==", "green"), builder.constraint("discount", ">", 20)],
+            { price: 10 }
+          )
         ]),
         builder.constraint("category", "not in", ["free", "out of stock"]),
       ],
       { price: 20 },
-      subRule
     )
   )
   .add(
