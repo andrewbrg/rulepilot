@@ -1,3 +1,6 @@
+export type WithRequired<Type, Key extends keyof Type> = Type &
+  Required<Pick<Type, Key>>;
+
 export type ConditionType = "any" | "all" | "none";
 export type Operator =
   | "=="
@@ -30,16 +33,10 @@ export interface Condition<R = any> {
   any?: (Constraint | Condition<R>)[];
   all?: (Constraint | Condition<R>)[];
   none?: (Constraint | Condition<R>)[];
-  rule?: SubRule<R>;
   result?: R;
 }
 
 export interface Rule<R = any> {
   conditions: Condition<R> | Condition<R>[];
   default?: R;
-}
-
-export interface SubRule<R = any> {
-  conditions: Condition<R> | Condition<R>[];
-  result?: R;
 }

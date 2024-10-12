@@ -1,11 +1,17 @@
+import {
+  Rule,
+  Condition,
+  Constraint,
+  WithRequired,
+  ConditionType,
+} from "../types";
 import { ObjectDiscovery } from "./object-discovery";
-import { Rule, SubRule, Condition, Constraint, ConditionType } from "../types";
 
 export class Evaluator {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
 
-  /** Stores any results from sub-rules */
-  #subRuleResults: any[];
+  /** Stores any results from nested conditions */
+  #nestedResults: any[];
 
   /**
    * Evaluates a rule against a set of criteria and returns the result.
@@ -21,20 +27,20 @@ export class Evaluator {
       const result: T | boolean[] = [];
       for (const c of criteria) {
         // Clear any previous sub-results.
-        this.#subRuleResults = [];
+        this.#nestedResults = [];
         result.push(this.#evaluateRule(rule.conditions, c, rule?.default));
       }
 
-      return this.#subRuleResults.length
-        ? this.#subRuleResults[0]
+      return this.#nestedResults.length
+        ? this.#nestedResults[0]
         : (result as T | boolean);
     }
 
     // Clear any previous sub-results.
-    this.#subRuleResults = [];
+    this.#nestedResults = [];
 
     const e = this.#evaluateRule<T>(rule.conditions, criteria, rule?.default);
-    return this.#subRuleResults.length ? this.#subRuleResults[0] : e;
+    return this.#nestedResults.length ? this.#nestedResults[0] : e;
   }
 
   /**
@@ -76,8 +82,8 @@ export class Evaluator {
     const type = this.#objectDiscovery.conditionType(condition);
     if (!type) return false;
 
-    // If the condition has sub-rules we should process them.
-    this.#processSubRule(condition, criteria, type);
+    // If the condition has nested results
+    this.#processNestedResults(condition, criteria, type);
 
     // Set the starting result
     let result: boolean | undefined = undefined;
@@ -85,7 +91,7 @@ export class Evaluator {
     // Check each node in the condition.
     for (const node of condition[type]) {
       // Ignore sub-rules when evaluating the condition.
-      if (this.#objectDiscovery.isSubRule(node)) continue;
+      if (this.#objectDiscovery.isConditionWithResult(node)) continue;
 
       let fn: () => boolean;
       if (this.#objectDiscovery.isCondition(node))
@@ -108,48 +114,47 @@ export class Evaluator {
    * @param criteria The criteria to evaluate the condition against.
    * @param type The parent condition type.
    */
-  #processSubRule(condition: Condition, criteria: object, type: ConditionType) {
-    // Find the sub-rule within the condition
-    const subRule: SubRule = (
-      condition[type].find((node) => this.#objectDiscovery.isSubRule(node)) as {
-        rule: SubRule;
+  #processNestedResults(
+    condition: Condition,
+    criteria: object,
+    type: ConditionType
+  ) {
+    // Find all the nested conditions which have results
+    const candidates = condition[type].filter((node) =>
+      this.#objectDiscovery.isConditionWithResult(node)
+    ) as WithRequired<Condition, "result">[];
+
+    // For each candidate, check if all the sibling
+    // conditions and constraints pass
+    candidates.forEach((candidate) => {
+      let siblingsPass: boolean | undefined = undefined;
+      for (const node of condition[type]) {
+        if (this.#objectDiscovery.isConditionWithResult(node)) continue;
+
+        if (this.#objectDiscovery.isCondition(node)) {
+          siblingsPass = this.#accumulate(
+            type,
+            () => this.#evaluateCondition(node, criteria),
+            siblingsPass
+          );
+        }
+
+        if (this.#objectDiscovery.isConstraint(node)) {
+          siblingsPass = this.#accumulate(
+            type,
+            () => this.#checkConstraint(node, criteria),
+            siblingsPass
+          );
+        }
       }
-    )?.rule;
-    if (!subRule) return;
 
-    // Check if all the sibling conditions and constraints pass
-    let siblingsPass: boolean | undefined = undefined;
-    for (const node of condition[type]) {
-      if (this.#objectDiscovery.isSubRule(node)) continue;
+      if (!siblingsPass) return;
 
-      if (this.#objectDiscovery.isCondition(node)) {
-        siblingsPass = this.#accumulate(
-          type,
-          () => this.#evaluateCondition(node, criteria),
-          siblingsPass
-        );
-      }
+      // Evaluate the sub-rule
+      const passed = this.#evaluateRule(candidate, criteria, false, true);
 
-      if (this.#objectDiscovery.isConstraint(node)) {
-        siblingsPass = this.#accumulate(
-          type,
-          () => this.#checkConstraint(node, criteria),
-          siblingsPass
-        );
-      }
-    }
-
-    if (!siblingsPass) return;
-
-    // Evaluate the sub-rule
-    const passed = this.#evaluateRule(
-      subRule.conditions,
-      criteria,
-      false,
-      true
-    );
-
-    if (passed) this.#subRuleResults.push(subRule.result);
+      if (passed) this.#nestedResults.push(candidate.result);
+    });
   }
 
   /**

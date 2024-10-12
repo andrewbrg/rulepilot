@@ -1,8 +1,8 @@
 import {
   Rule,
-  SubRule,
   Condition,
   Constraint,
+  WithRequired,
   CriteriaRange,
   ConditionType,
   IntrospectionResult,
@@ -21,7 +21,7 @@ interface IntrospectionStep {
 
 interface SubRuleResult {
   parent: Condition;
-  subRule: SubRule;
+  subRule: any;
 }
 
 /**
@@ -50,11 +50,14 @@ export class Introspector {
     let subRuleResults: SubRuleResult[] = [];
     for (const condition of this.#asArray(rule.conditions)) {
       subRuleResults = subRuleResults.concat(
-        this.#findSubRules(condition, condition)
+        this.#findNestedResultConditions(condition, condition)
       );
     }
 
+    console.log(subRuleResults);
+
     let results = this.#introspectRule<R>(rule);
+    console.log(JSON.stringify(results));
 
     // Construct a new rule from each sub-rule result
     for (const subRuleResult of subRuleResults) {
@@ -98,7 +101,7 @@ export class Introspector {
   #introspectRule<R>(rule: Rule): CriteriaRange<R>[] {
     // Initialize a clean steps array each time we introspect
     this.#steps = [];
-    const conditions = this.#asArray(rule.conditions);
+    const conditions = this.#stripAllSubRules(this.#asArray(rule.conditions));
 
     // Then we map each result to the condition that produces
     // it to create a map of results to conditions
@@ -128,7 +131,7 @@ export class Introspector {
    * @param root The root condition which holds the condition to search.
    * @param results The results array to populate.
    */
-  #findSubRules(
+  #findNestedResultConditions(
     condition: Condition,
     root: Condition,
     results: SubRuleResult[] = []
@@ -138,24 +141,26 @@ export class Introspector {
 
     // Iterate each node in the condition
     for (const node of condition[type]) {
-      if (this.#objectDiscovery.isSubRule(node)) {
+      if (this.#objectDiscovery.isConditionWithResult(node)) {
         results.push({
-          parent: this.#removeSubRule(node.rule, root),
+          parent: this.#removeSubRule(node, root),
           subRule: {
-            conditions: this.#stripAllSubRules(node.rule.conditions),
-            result: node.rule.result,
+            conditions: this.#stripAllSubRules(node),
+            result: node.result,
           },
         });
 
         // Recursively find sub-rules within the sub-rule
-        for (const condition of this.#asArray(node.rule.conditions)) {
-          results = this.#findSubRules(condition, root, results);
+        for (const condition of this.#asArray(node)) {
+          results = this.#findNestedResultConditions(condition, root, results);
         }
+
+        return results;
       }
 
       // Recursively find sub-rules within the condition
       if (this.#objectDiscovery.isCondition(node)) {
-        results = this.#findSubRules(node, root, results);
+        results = this.#findNestedResultConditions(node, root, results);
       }
     }
 
@@ -167,7 +172,10 @@ export class Introspector {
    * @param needle The sub-rule to remove.
    * @param haystack The condition to search in and remove the sub-rule from.
    */
-  #removeSubRule(needle: SubRule, haystack: Condition): Condition {
+  #removeSubRule(
+    needle: WithRequired<Condition, "result">,
+    haystack: Condition
+  ): Condition {
     // Clone the root condition so that we can modify it
     const clone = JSON.parse(JSON.stringify(haystack));
 
@@ -185,14 +193,14 @@ export class Introspector {
       }
 
       // If the node is a sub-rule
-      if (this.#objectDiscovery.isSubRule(node)) {
-        if (!this.existsIn(needle, node.rule.conditions)) {
+      if (this.#objectDiscovery.isConditionWithResult(node)) {
+        if (!this.existsIn(needle, node)) {
           clone[type].splice(i, 1);
           continue;
         }
 
         // Otherwise, recurse into the sub-rule
-        const conditions = this.#asArray(node.rule.conditions);
+        const conditions = this.#asArray(node);
         for (let j = 0; j < conditions.length; j++) {
           clone[type][i].rule.conditions[j] = this.#removeSubRule(
             needle,
@@ -212,7 +220,7 @@ export class Introspector {
    * @param found A flag to indicate if the sub-rule has been found.
    */
   existsIn(
-    needle: SubRule,
+    needle: WithRequired<Condition, "result">,
     haystack: unknown,
     found: boolean = false
   ): boolean {
@@ -221,11 +229,11 @@ export class Introspector {
     // Otherwise, recurse into the sub-rule
     for (const node of this.#asArray(haystack)) {
       // If the node is a sub-rule
-      if (this.#objectDiscovery.isSubRule(node)) {
+      if (this.#objectDiscovery.isConditionWithResult(node)) {
         // Check if it is the sub-rule we are looking for
-        if (JSON.stringify(needle) === JSON.stringify(node.rule)) return true;
+        if (JSON.stringify(needle) === JSON.stringify(node)) return true;
         // Otherwise, recurse into the sub-rule
-        found = this.existsIn(needle, node.rule.conditions, found);
+        found = this.existsIn(needle, node, found);
       }
 
       // If the node is a condition, recurse
@@ -263,7 +271,8 @@ export class Introspector {
         }
 
         // If the node is a sub-rule, remove it
-        if (this.#objectDiscovery.isSubRule(node)) clone[i][type].splice(j, 1);
+        if (this.#objectDiscovery.isConditionWithResult(node))
+          clone[i][type].splice(j, 1);
       }
     }
 
@@ -287,8 +296,9 @@ export class Introspector {
 
       const type = this.#objectDiscovery.conditionType(condition);
       for (const node of condition[type]) {
-        if (this.#objectDiscovery.isSubRule(node)) {
-          result = this.#flatten(node.rule.conditions, result);
+        if (this.#objectDiscovery.isConditionWithResult(node)) {
+          delete node.result;
+          result = this.#flatten(node, result);
           continue;
         }
 

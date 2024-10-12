@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "badges": "jest-badges-readme",
-    "test": "jest --testPathPattern=test --detectOpenHandles --color --forceExit",
+    "test": "jest --testPathPattern=test --color --forceExit",
     "build": "rm -rf dist && tsc",
     "prettier": "prettier --write .",
     "publish": "npm run build && npm publish --access public"

@@ -4,6 +4,7 @@ import { valid3Json } from "./rulesets/valid3.json";
 import { valid5Json } from "./rulesets/valid5.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { invalid2Json } from "./rulesets/invalid2.json";
+import { subRulesValid3Json } from "./rulesets/sub-rules-valid3.json";
 import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
 import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
@@ -257,6 +258,41 @@ describe("RulePilot engine correctly", () => {
         Category: "Islamic",
       })
     ).toEqual(4);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid3Json, {
+        fieldA: "bar",
+        fieldC: 600,
+      })
+    ).toEqual(3);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid3Json, {
+        fieldA: "bar",
+        fieldC: 600,
+        fieldD: "whoop",
+      })
+    ).toEqual(33);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid3Json, {
+        fieldA: "bar",
+        fieldB: 2,
+        fieldD: "whoop",
+      })
+    ).toEqual(33);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid3Json, {
+        fieldD: "whoop",
+      })
+    ).toEqual(5);
+
+    expect(
+      await RulePilot.evaluate(subRulesValid3Json, {
+        fieldA: "value",
+      })
+    ).toEqual(5);
   });
 
   it("Evaluates a rule with sub-rules where the parent condition has a nested rule", async () => {

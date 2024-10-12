@@ -95,7 +95,7 @@ describe("RulePilot validator correctly", () => {
 
     expect(validation.isValid).toEqual(false);
     expect(validation.error.message).toEqual(
-      'Nested conditions cannot have a property "result".'
+      "Each node should be a condition or a constraint."
     );
   });
 

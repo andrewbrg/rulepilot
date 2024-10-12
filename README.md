@@ -428,17 +428,15 @@ let result = await RulePilot.evaluate(rule, criteria); // result = [true, false]
 
 ### Sub Rules
 
-Sub-rules can be used to create early exit points rules by assigning a `rule` property to a condition. This rule property
-will contain a new rule in itself which will be evaluated if the constraints of the host condition are met.
+Sub-rules can be used to create early exit points in a rule by assigning a `result` property to a condition. 
 
-Sub-rules do not need to evaluate to true for their parent condition to pass evaluation. They contain their own result 
-which will be returned if the following conditions are met:
+This value of this result will be returned when the rule is evaluated if all the constraints from the root of the rule 
+to this result are met.
 
-- The parent condition (all criteria and/or nested rules) are met
-- The sub-rule is met
+> Note: Sub-rules do not need to evaluate to true for their parent condition to pass evaluation. 
 
-They provide a convenient way to create complex rules with early exit points and avoid repeating the same constraints 
-in multiple places. 
+Sub-rules provide a convenient way to create complex rules with early exit points and avoid repeating the same 
+constraints in multiple places. 
 
 An example of a sub-rule can be seen below:
 
@@ -449,18 +447,8 @@ const rule: Rule = {
   conditions: {
     any: [
       { field: "profile.age", operator: ">=",  value: 18 },
-      {
-        rule: {
-          conditions: { all: [{ field: "foo", operator: "==", value: 'A' }] },
-          result: 10
-        }
-      },
-      {
-        rule: {
-          conditions: { all: [{ field: "foo", operator: "==", value: 'B' }] },
-          result: 20
-        },
-      }
+      { all: [{ field: "foo", operator: "==", value: 'A' }], result: 10 },
+      { all: [{ field: "foo", operator: "==", value: 'B' }], result: 20 }
     ],
     result: 5
   }
