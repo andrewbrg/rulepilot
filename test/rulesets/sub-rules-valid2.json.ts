@@ -1,7 +1,40 @@
 import { Rule } from "../../src";
 
+// Test against Category 900
+// -> Leverage 1000, 500
+// -> Monetization Demo
+
 export const subRulesValid2Json: Rule = {
   conditions: [
+    {
+      none: [
+        {
+          field: "Category",
+          operator: "==",
+          value: 900,
+        },
+        {
+          field: "Leverage",
+          operator: "==",
+          value: 500,
+        },
+        {
+          any: [
+            {
+              field: "Leverage",
+              operator: "==",
+              value: 1000,
+            },
+            {
+              field: "Leverage",
+              operator: "==",
+              value: 500,
+            },
+          ],
+        },
+      ],
+      result: 50,
+    },
     {
       any: [
         {
@@ -17,7 +50,7 @@ export const subRulesValid2Json: Rule = {
         {
           all: [
             {
-              field: "Category",
+              field: "Monetization",
               operator: "==",
               value: "Demo",
             },

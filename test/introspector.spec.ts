@@ -6,6 +6,7 @@ import { valid7Json } from "./rulesets/valid7.json";
 import { valid8Json } from "./rulesets/valid8.json";
 import { valid9Json } from "./rulesets/valid9.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
+import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
 import { RuleError, RulePilot, RuleTypeError } from "../src";
 
@@ -157,5 +158,64 @@ describe("RulePilot introspector correctly", () => {
         },
       ],
     });
+  });
+
+  expect(RulePilot.introspect(subRulesValid2Json)).toEqual({
+    results: [
+      {
+        result: 3,
+        options: [{ Leverage: [1000, 500] }, { Category: "Demo" }],
+      },
+      {
+        result: 4,
+        options: [{ Category: "Islamic" }],
+      },
+      {
+        result: 15,
+        options: [
+          {
+            Leverage: [{ operator: ">", value: 500 }, 1000, 500], // the gt 500 is wrong here
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910],
+            CountryIso: ["GB", "FI"], // incorrect (should not exist)
+            Monetization: "Real", // incorrect (should not exist)
+          },
+          {
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910, "Demo"],
+            Leverage: [],
+          },
+        ],
+      },
+      {
+        result: 12,
+        options: [
+          {
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910],
+            CountryIso: ["GB", "FI"],
+            Leverage: [{ operator: ">", value: 500 }, 1000, 500],
+            Monetization: "Real",
+          },
+          {
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910, "Demo"],
+            Leverage: [],
+          },
+        ],
+      },
+      {
+        result: 13,
+        options: [
+          {
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910],
+            CountryIso: ["GB", "FI"],
+            Leverage: [{ operator: ">", value: 500 }, 1000, 500],
+            Monetization: "Real",
+          },
+          {
+            Category: [{ operator: ">=", value: 1000 }, 22, 900, 910, "Demo"],
+            Leverage: [],
+          },
+        ],
+      },
+    ],
+    default: 2,
   });
 });

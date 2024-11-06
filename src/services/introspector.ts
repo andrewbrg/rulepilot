@@ -33,20 +33,229 @@ export class Introspector {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
   #steps: IntrospectionStep[];
 
-  /**
-   * Given a rule, checks the constraints and conditions to determine
-   * the possible range of input criteria which would be satisfied by the rule.
-   * The rule must be a granular rule to be introspected.
-   * @param rule The rule to evaluate.
-   * @throws RuleTypeError if the rule is not granular
-   */
-  introspect<R>(rule: Rule): IntrospectionResult<R> {
+  intrNew<R>(
+    rule: Rule,
+    constraint: Constraint,
+    subjects: string[]
+  ): IntrospectionResult<R> {
     // The ruleset needs to be granular for this operation to work
     if (!this.#objectDiscovery.isGranular(rule)) {
       throw new RuleTypeError("Introspection requires granular rules.");
     }
 
+    // We care about all the possible values for the subjects which will satisfy
+    // the rule if the rule is tested against the constraint provided.
+
+    // First step is to simplify the rule:
+    // 1. Make sure the rule conditions is an array.
+    // 2. Convert any 'none' conditions to an 'all' and reverse operators of all children till the bottom.
+    // 3. Remove all constraints which are not relevant to the subjects provided.
+    rule.conditions = this.#asArray(rule.conditions);
+    for (let i = 0; i < rule.conditions.length; i++) {
+      rule.conditions[i] = this.#reverseNoneToAll(rule.conditions[i]);
+      rule.conditions[i] = this.#removeIrrelevantConstraints(
+        rule.conditions[i],
+        [...subjects, constraint.field]
+      );
+    }
+
+    // We extract each root condition from the rule and evaluate the condition against the constraint.
+
+    // If the condition passes the check, we know we have subjects in the condition which we should return
+
+    // If the condition fails the check but contains the constraint, it means we want to
+
+    // this condition against the constraint we have. If the condition passes the constraint
+
+    return null;
+  }
+
+  /**
+   * Reverses all 'none' conditions to 'all' and flips the operators of all children.
+   * @param condition The condition to reverse.
+   * @param shouldFlip A flag to indicate if the operators should be flipped.
+   */
+  #reverseNoneToAll(
+    condition: Condition,
+    shouldFlip: boolean = false
+  ): Condition {
+    const type = this.#objectDiscovery.conditionType(condition);
+    if ("none" === type) shouldFlip = !shouldFlip;
+
+    // Iterate each node in the condition
+    for (let i = 0; i < condition[type].length; i++) {
+      let node = condition[type][i];
+
+      // If the node is a condition, check if we need to reverse it
+      if (shouldFlip && this.#objectDiscovery.isConstraint(node)) {
+        node = this.#flipConstraintOperator(node as Constraint);
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        node = this.#reverseNoneToAll(node as Condition, shouldFlip);
+      }
+    }
+
+    if (shouldFlip) {
+      condition["all"] = condition[type];
+      delete condition[type];
+    }
+
+    return this.#stripNullProps(condition);
+  }
+
+  /**
+   * Removes all constraints which are not relevant to the subjects provided.
+   * @param condition The condition to remove irrelevant constraints from.
+   * @param toKeep The subjects to keep.
+   */
+  #removeIrrelevantConstraints(
+    condition: Condition,
+    toKeep: string[]
+  ): Condition {
+    const type = this.#objectDiscovery.conditionType(condition);
+
+    // Iterate each node in the condition
+    for (let i = 0; i < condition[type].length; i++) {
+      let node = condition[type][i];
+
+      // If the node is a condition, check if we need to reverse it
+      const isConstraint = this.#objectDiscovery.isConstraint(node);
+      if (isConstraint && !toKeep.includes(node["field"])) {
+        delete condition[type][i];
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        node = this.#removeIrrelevantConstraints(node as Condition, toKeep);
+      }
+    }
+
+    return this.#stripNullProps(condition);
+  }
+
+  /**
+   * Flips the operator of a constraint.
+   * @param c The constraint to flip the operator of.
+   */
+  #flipConstraintOperator(c: Constraint): Constraint {
+    if ("==" === c.operator) {
+      c.operator = "!=";
+      return c;
+    }
+    if ("!=" === c.operator) {
+      c.operator = "==";
+      return c;
+    }
+    if (">" === c.operator) {
+      c.operator = "<=";
+      return c;
+    }
+    if ("<" === c.operator) {
+      c.operator = ">=";
+      return c;
+    }
+    if (">=" === c.operator) {
+      c.operator = "<";
+      return c;
+    }
+    if ("<=" === c.operator) {
+      c.operator = ">";
+      return c;
+    }
+    if ("in" === c.operator) {
+      c.operator = "not in";
+      return c;
+    }
+    if ("not in" === c.operator) {
+      c.operator = "in";
+      return c;
+    }
+    if ("contains" === c.operator) {
+      c.operator = "not contains";
+      return c;
+    }
+    if ("not contains" === c.operator) {
+      c.operator = "contains";
+      return c;
+    }
+    if ("contains any" === c.operator) {
+      c.operator = "not contains any";
+      return c;
+    }
+    if ("not contains any" === c.operator) {
+      c.operator = "contains any";
+      return c;
+    }
+    if ("matches" === c.operator) {
+      c.operator = "not matches";
+      return c;
+    }
+    if ("not matches" === c.operator) {
+      c.operator = "matches";
+      return c;
+    }
+
+    return c;
+  }
+
+  /**
+   * Removes all null properties from an object.
+   * @param obj The object to remove null properties from.
+   * @param defaults The default values to remove.
+   */
+  #stripNullProps(
+    obj: Record<string, any>,
+    defaults: any[] = [undefined, null, NaN, ""]
+  ) {
+    if (defaults.includes(obj)) return;
+
+    if (Array.isArray(obj))
+      return obj
+        .map((v) =>
+          v && typeof v === "object" ? this.#stripNullProps(v, defaults) : v
+        )
+        .filter((v) => !defaults.includes(v));
+
+    return Object.entries(obj).length
+      ? Object.entries(obj)
+          .map(([k, v]) => [
+            k,
+            v && typeof v === "object" ? this.#stripNullProps(v, defaults) : v,
+          ])
+          .reduce(
+            (a, [k, v]) => (defaults.includes(v) ? a : { ...a, [k]: v }),
+            {}
+          )
+      : obj;
+  }
+
+  /**
+   * Given a rule, checks the constraints and conditions to determine
+   * the possible range of input criteria which would be satisfied by the rule.
+   * The rule must be a granular rule to be introspected.
+   * @param rule The rule to evaluate.
+   * @param constraint The constraint to introspect against.
+   * @param subjects The subjects to introspect for.
+   * @throws RuleTypeError if the rule is not granular
+   */
+  introspect<R>(
+    rule: Rule,
+    constraint: Constraint,
+    subjects: string[]
+  ): IntrospectionResult<R> {
+    // The ruleset needs to be granular for this operation to work
+    if (!this.#objectDiscovery.isGranular(rule)) {
+      throw new RuleTypeError("Introspection requires granular rules.");
+    }
+
+    this.intrNew(rule, constraint, subjects);
+
     // Find any conditions which contain sub-rules
+    // We extract each sub-rule along with the parent rule that needs to pass in order
+    // for the subrule to be applicable.
+    // todo this is leaving the original sub rule in the parent rule
     let subRuleResults: SubRuleResult[] = [];
     for (const condition of this.#asArray(rule.conditions)) {
       subRuleResults = subRuleResults.concat(
@@ -54,10 +263,10 @@ export class Introspector {
       );
     }
 
-    console.log(subRuleResults);
+    console.log(JSON.stringify(subRuleResults));
 
-    let results = this.#introspectRule<R>(rule);
-    console.log(JSON.stringify(results));
+    let results = this.#introspectRule<R>(rule, constraint, subjects);
+    //console.log(JSON.stringify(results));
 
     // Construct a new rule from each sub-rule result
     for (const subRuleResult of subRuleResults) {
@@ -77,12 +286,16 @@ export class Introspector {
       // );
 
       results = results.concat(
-        this.#introspectRule<R>({
-          conditions: {
-            ...res,
-            result: subRuleResult.subRule.result,
+        this.#introspectRule<R>(
+          {
+            conditions: {
+              ...res,
+              result: subRuleResult.subRule.result,
+            },
           },
-        })
+          constraint,
+          subjects
+        )
       );
     }
 
@@ -97,8 +310,14 @@ export class Introspector {
   /**
    * Runs the introspection process on a rule to determine the possible range of input criteria
    * @param rule The rule to introspect.
+   * @param constraint The constraint to introspect against.
+   * @param subjects The subjects to introspect for.
    */
-  #introspectRule<R>(rule: Rule): CriteriaRange<R>[] {
+  #introspectRule<R>(
+    rule: Rule,
+    constraint: Constraint,
+    subjects: string[]
+  ): CriteriaRange<R>[] {
     // Initialize a clean steps array each time we introspect
     this.#steps = [];
     const conditions = this.#stripAllSubRules(this.#asArray(rule.conditions));
