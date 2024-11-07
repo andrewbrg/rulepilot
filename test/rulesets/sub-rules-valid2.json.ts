@@ -7,7 +7,7 @@ import { Rule } from "../../src";
 export const subRulesValid2Json: Rule = {
   conditions: [
     {
-      all: [
+      none: [
         {
           field: "Category",
           operator: "==",
@@ -51,7 +51,7 @@ export const subRulesValid2Json: Rule = {
         {
           all: [
             {
-              field: "Category",
+              field: "Leverage",
               operator: "==",
               value: "Demo",
             },

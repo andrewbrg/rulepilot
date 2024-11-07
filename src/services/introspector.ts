@@ -8,6 +8,7 @@ import {
   IntrospectionResult,
 } from "../types";
 import { Logger } from "./logger";
+import { Evaluator } from "./evaluator";
 import { RuleTypeError } from "../errors";
 import { ObjectDiscovery } from "./object-discovery";
 
@@ -30,6 +31,7 @@ interface SubRuleResult {
  * produced by the criteria.
  */
 export class Introspector {
+  #evaluator: Evaluator = new Evaluator();
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
   #steps: IntrospectionStep[];
 
@@ -65,19 +67,43 @@ export class Introspector {
       subRuleResults = subRuleResults.concat(this.#extractSubRules(condition));
     }
 
+    // console.log("boom", JSON.stringify(subRuleResults));
+
     // We then create a new version of the rule without any of the sub-rules
+    let ruleConditions: Condition[] = [];
     for (let i = 0; i < rule.conditions.length; i++) {
-      rule.conditions[i] = this.#removeAllSubRules(rule.conditions[i]);
+      ruleConditions.push(this.#removeAllSubRules(rule.conditions[i]));
     }
 
-    console.log("boom", JSON.stringify(subRuleResults));
-    console.log("bam", JSON.stringify(rule));
+    // console.log("bam", JSON.stringify(ruleConditions));
 
     // Any further introspection will be done on the new rule and the sub-rules extracted
     // At this point the search becomes as follows: What are the possible values for the
     // subjects which will satisfy the rule if the rule is tested against the constraint provided.
 
-    // We extract each root condition from the rule and evaluate the condition against the constraint.
+    // If each rule has a constraint in it which matches the type of one of the constraint we have, then
+    // we need to evaluate the rule against the constraint and only consider the rule if it passes.
+
+    // For the new rule
+    ruleConditions = ruleConditions.filter((condition) => {
+      return this.#hasConstraintField(constraint.field, condition)
+        ? this.#evaluator.evaluate(
+            { conditions: [condition] },
+            { [constraint.field]: constraint.value }
+          )
+        : true;
+    });
+
+    // For the sub-rules
+    // When evaluating the sub-rule, we need to first make sure the parent condition passes
+    // before we can evaluate the sub-rule, otherwise we can discard the sub-rule entirely.
+    subRuleResults = subRuleResults.filter((rule) => {});
+
+    console.log("tam", JSON.stringify(ruleConditions));
+
+    // At this point the task has been simplified to it's maximum capacity. We can now introspect each
+    // rule and sub-rule remaining to determine the possible range of input criteria which would satisfy
+    // the rule. These criteria will match the subjects provided to this function.
 
     // If the condition passes the check, we know we have subjects in the condition which we should return
 
@@ -351,6 +377,26 @@ export class Introspector {
     }
 
     return this.#stripNullProps(clone);
+  }
+
+  #hasConstraintField(field: string, haystack: Condition): boolean {
+    // Iterate over each node in the condition
+    const type = this.#objectDiscovery.conditionType(haystack);
+    for (let i = 0; i < haystack[type].length; i++) {
+      const node = haystack[type][i];
+
+      // If the node is a constraint, check if it has the field we are looking for
+      if (this.#objectDiscovery.isConstraint(node) && node.field === field) {
+        return true;
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        return this.#hasConstraintField(field, node);
+      }
+    }
+
+    return false;
   }
 
   /**
