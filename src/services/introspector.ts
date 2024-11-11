@@ -1,6 +1,12 @@
 import { Logger } from "./logger";
 import { ObjectDiscovery } from "./object-discovery";
-import { Rule, Condition, Constraint } from "../types";
+import {
+  Rule,
+  Condition,
+  Constraint,
+  ConditionType,
+  IntrospectionResult,
+} from "../types";
 
 interface SubRuleResult {
   parent?: Condition;
@@ -25,7 +31,7 @@ export class Introspector {
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): Record<string, Omit<Constraint, "field">[]> {
+  ): IntrospectionResult {
     // We care about all the possible values for the subjects which will satisfy
     // the rule if the rule is tested against the constraint provided.
 
@@ -55,9 +61,16 @@ export class Introspector {
     }
 
     subRules.forEach((rule) => {
-      conditions.push(
-        rule.parent ? { all: [rule.parent, rule.subRule] } : rule.subRule
-      );
+      if (!rule.parent) {
+        conditions.push(rule.subRule);
+        return;
+      }
+
+      const result = rule.subRule.result;
+      delete rule.parent.result;
+      delete rule.subRule.result;
+
+      conditions.push({ all: [rule.parent, rule.subRule], result });
     });
 
     // todo remove
@@ -74,6 +87,9 @@ export class Introspector {
       const { values } = this.#introspectConditions(condition, constraint);
       if (!values) continue;
 
+      const key = condition.result ?? "default";
+      results[key] = results[key] ?? {};
+
       // Merge the results maintaining the uniqueness of the values
       for (const [field, constraints] of values.entries()) {
         if (!subjects.includes(field)) continue;
@@ -83,7 +99,7 @@ export class Introspector {
           set.add({ value: constraint.value, operator: constraint.operator });
         }
 
-        results[field] = Array.from(set);
+        results[key][field] = Array.from(set);
       }
     }
 
@@ -397,7 +413,7 @@ export class Introspector {
           for (const c of constraints) {
             // Test against the local results, if it fails, empty the results and return
             if (!this.#test(candidates, input, c, type, depth)) {
-              Logger.debug(`${gap}X Exiting condition & discarding results...`);
+              Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
               return { stop: true, void: true };
@@ -457,14 +473,14 @@ export class Introspector {
 
             // Test against local and parent results, if any fail, empty parent results and return
             if (!this.#test(candidates, input, c, type, depth)) {
-              Logger.debug(`${gap}X Exiting condition & discarding results...`);
+              Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
               return { stop: true, void: true };
             }
 
             if (!this.#test(results, input, c, type, depth)) {
-              Logger.debug(`${gap}X Exiting condition & discarding results...`);
+              Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
               return { stop: true, void: true };
@@ -477,7 +493,7 @@ export class Introspector {
       }
 
       // Add the local results to the parent results
-      this.#sanitizeCandidates(candidates, depth).forEach((c) =>
+      this.#sanitizeCandidates(candidates, type, depth).forEach((c) =>
         this.#appendResult(parentResults, c)
       );
     }
@@ -829,7 +845,7 @@ export class Introspector {
     const pass = this.#txtCol("pass", "g");
     const fail = this.#txtCol("fail", "r");
 
-    const msg = ` ${gap}> Testing '${col}' ${item.operator} '${val}'`;
+    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
     Logger.debug(msg, `(${result ? pass : fail})`);
 
     // Return the result
@@ -839,13 +855,18 @@ export class Introspector {
   /**
    *
    * @param candidates The constraints to sanitize.
+   * @param type The type of the condition holding the constraints.
    * @param depth The current recursion depth.
    */
-  #sanitizeCandidates(candidates: Constraint[], depth: number): Constraint[] {
+  #sanitizeCandidates(
+    candidates: Constraint[],
+    type: ConditionType,
+    depth: number
+  ): Constraint[] {
     if (candidates.length < 2) return candidates;
 
     const gap = "  ".repeat(depth);
-    const msg = ` ${gap}> ${this.#txtCol("Sanitizing", "b")}:`;
+    const msg = ` ${gap}> ${this.#txtCol(`Sanitizing (${type})`, "b")}:`;
 
     const values = [];
     for (const c of candidates) {

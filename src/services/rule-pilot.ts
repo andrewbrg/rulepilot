@@ -2,9 +2,9 @@ import { Mutator } from "./mutator";
 import { Builder } from "../builder";
 import { RuleError } from "../errors";
 import { Evaluator } from "./evaluator";
-import { Rule, Constraint } from "../types";
 import { Introspector } from "./introspector";
 import { Validator, ValidationResult } from "./validator";
+import { Rule, Constraint, IntrospectionResult } from "../types";
 
 export class RulePilot {
   static #rulePilot = new RulePilot();
@@ -102,7 +102,7 @@ export class RulePilot {
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): Record<string, Omit<Constraint, "field">[]> {
+  ): IntrospectionResult {
     // Before we proceed with the rule, we should validate it.
     const validationResult = this.validate(rule);
     if (!validationResult.isValid) {
@@ -166,7 +166,7 @@ export class RulePilot {
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): Record<string, Omit<Constraint, "field">[]> {
+  ): IntrospectionResult {
     return RulePilot.#rulePilot.introspect(rule, constraint, subjects);
   }
 
