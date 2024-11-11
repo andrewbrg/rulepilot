@@ -1,12 +1,6 @@
 import { Logger } from "./logger";
 import { ObjectDiscovery } from "./object-discovery";
-import {
-  Rule,
-  Condition,
-  Constraint,
-  ConditionType,
-  IntrospectionResult,
-} from "../types";
+import { Rule, Condition, Constraint, IntrospectionResult } from "../types";
 
 interface SubRuleResult {
   parent?: Condition;
@@ -412,7 +406,7 @@ export class Introspector {
         if ("all" === type) {
           for (const c of constraints) {
             // Test against the local results, if it fails, empty the results and return
-            if (!this.#test(candidates, input, c, type, depth)) {
+            if (!this.#test(candidates, input, c, depth)) {
               Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
@@ -426,7 +420,7 @@ export class Introspector {
       }
 
       if ("any" == parentType) {
-        if ("any" === type)
+        if ("any" === type) {
           for (const c of constraints) {
             this.#appendResult(parentResults, c);
 
@@ -436,10 +430,11 @@ export class Introspector {
             const msg = ` ${gap}+ Adding '${col}'${c.operator}'${val}'`;
             Logger.debug(msg, `(${this.#txtCol("pass", "g")})`);
           }
+        }
 
         if ("all" === type) {
           for (const c of constraints) {
-            if (!this.#test(candidates, input, c, type, depth)) {
+            if (!this.#test(candidates, input, c, depth)) {
               // Stop processing condition & DO NOT empty the parent results
               return { stop: true, void: false };
             }
@@ -456,7 +451,7 @@ export class Introspector {
           for (const c of constraints) {
             // Test against the parent results, if it passes, append to parent results
             const res = parentResults.get(field) ?? [];
-            if (this.#test(res, input, c, type, depth)) {
+            if (this.#test([...candidates, ...res], input, c, depth)) {
               allFailed = false;
               candidates.push(c);
             }
@@ -472,14 +467,14 @@ export class Introspector {
             const results = parentResults.get(field) ?? [];
 
             // Test against local and parent results, if any fail, empty parent results and return
-            if (!this.#test(candidates, input, c, type, depth)) {
+            if (!this.#test(candidates, input, c, depth)) {
               Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
               return { stop: true, void: true };
             }
 
-            if (!this.#test(results, input, c, type, depth)) {
+            if (!this.#test(results, input, c, depth)) {
               Logger.debug(`${gap}X Exiting & discarding results...`);
 
               // Stop processing condition & empty the results
@@ -493,7 +488,7 @@ export class Introspector {
       }
 
       // Add the local results to the parent results
-      this.#sanitizeCandidates(candidates, type, depth).forEach((c) =>
+      this.#sanitizeCandidates(candidates, depth).forEach((c) =>
         this.#appendResult(parentResults, c)
       );
     }
@@ -505,7 +500,7 @@ export class Introspector {
         values.push(`${c.operator}${this.#txtCol(c.value, "y")}`);
       }
 
-      const msg = ` ${gap}- ${this.#txtCol("Results", "m")} `;
+      const msg = ` ${gap}${this.#txtCol("* Results", "m")} `;
       Logger.debug(`${msg}${this.#txtCol(k, "g")}: ${values.join(", ")}`);
     }
 
@@ -550,291 +545,285 @@ export class Introspector {
    * @param candidates The result candidates to test against.
    * @param input The constraint which was input to the introspection.
    * @param item The constraint item to test against the candidates.
-   * @param type The type of the condition holding testConst.
    * @param depth The current recursion depth.
    */
   #test(
     candidates: Constraint[],
     input: Omit<Constraint, "operator">,
     item: Constraint,
-    type: "any" | "all",
     depth: number
   ): boolean {
     // Filter out results which do not match the field of the constraint
     candidates = candidates.filter((r) => r.field === item.field);
 
+    // Check if the input constraint matches the field of the item
+    const inputMatches = input.field === item.field;
+
     // Add the input constraint to the results (if it also matches the field)
-    if (input.field === item.field)
-      candidates.push({ ...input, operator: "==" });
+    if (inputMatches) candidates.push({ ...input, operator: "==" });
+
+    if (!candidates.length) return true;
 
     // Test that the constraint does not breach the results
     let result = false;
+    for (const c of candidates) {
+      let ops: any;
 
-    // If the type is any, we can just add the constraint to the results
-    if ("any" === type) result = true;
+      // Extract the item properties to test with
+      const { value, operator } = item;
 
-    if ("all" === type) {
-      if (!candidates.length) result = true;
+      switch (c.operator) {
+        case "==":
+          /**
+           *  c = (L == 500)
+           *  L == 500
+           *  L != !500
+           *  L >= 500
+           *  L <= 500
+           *  L > 499
+           *  L < 501
+           *  L IN [500]
+           *  L NOT IN [501, 502]
+           */
 
-      for (const c of candidates) {
-        let ops: any;
+          // Must be equal to the value irrelevant of the operator
+          ops = ["==", ">=", "<="];
+          if (ops.includes(operator) && value === c.value) result = true;
 
-        // Extract the item properties to test with
-        const { value, operator } = item;
+          // Item value must allow for constraint value to exist in item value range
+          if ("<" === operator && value > c.value) result = true;
+          if (">" === operator && value < c.value) result = true;
 
-        switch (c.operator) {
-          case "==":
-            /**
-             *  c = (L == 500)
-             *  L == 500
-             *  L != !500
-             *  L >= 500
-             *  L <= 500
-             *  L > 499
-             *  L < 501
-             *  L IN [500]
-             *  L NOT IN [501, 502]
-             */
+          // Item value cannot be equal to constraint value
+          if ("!=" === operator && value !== c.value) result = true;
 
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val === c.value))
+              result = true;
+          }
+
+          // None of the values in the item must match the candidate value
+          if ("not in" === operator) {
+            if (!this.#asArray(value).some((val) => val === c.value))
+              result = true;
+          }
+          break;
+        case "!=":
+          /**
+           *  c = (L != 500)
+           *  L == !500
+           *  L != any
+           *  L >= any
+           *  L <= any
+           *  L > any
+           *  L < any
+           *  L IN [500, 502]
+           *  L NOT IN [499,500]
+           */
+
+          // Must be different
+          if ("==" === operator && value !== c.value) result = true;
+
+          // Always pass
+          ops = ["!=", ">", ">=", "<", "<=", "not in"];
+          if (ops.includes(operator)) result = true;
+
+          // One of the values in the item must NOT match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val !== c.value))
+              result = true;
+          }
+          break;
+        case ">":
+          /**
+           *  c = (L > 500)
+           *  L == 501↑
+           *  L != any
+           *  L >= any
+           *  L <= 501↑
+           *  L > any
+           *  L < 502↑
+           *  IN [501, 502]
+           *  NOT IN [501, 502]
+           */
+
+          // Must be bigger than the value
+          ops = ["==", "<="];
+          if (ops.includes(operator) && value > c.value) result = true;
+
+          if ("<" === operator && Number(value) > Number(c.value) + 2)
+            result = true;
+
+          // Always pass
+          ops = ["!=", ">", ">=", "not in"];
+          if (ops.includes(operator)) result = true;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val > c.value))
+              result = true;
+          }
+          break;
+        case "<":
+          /**
+           *  c = (L < 500)
+           *  L == 499↓
+           *  L != any
+           *  L >= 499↓
+           *  L <= any
+           *  L > 498↓
+           *  L < any
+           *  IN [499, 500]
+           */
+
+          // Must be smaller than the value
+          ops = ["==", ">="];
+          if (ops.includes(operator) && value < c.value) result = true;
+
+          if (">" === operator && Number(value) < Number(c.value) - 2)
+            result = true;
+
+          // Always pass
+          ops = ["!=", "<", "<=", "not in"];
+          if (ops.includes(operator)) result = true;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val < c.value))
+              result = true;
+          }
+          break;
+        case ">=":
+          /**
+           *  c = (L >= 500)
+           *  L == 500↑
+           *  L != any
+           *  L >= any
+           *  L <= 500↑
+           *  L > any
+           *  L < 501↑
+           *  L IN [500, 501]
+           */
+
+          // Must be bigger than the value
+          ops = ["==", "<="];
+          if (ops.includes(operator) && value >= c.value) result = true;
+
+          if ("<" === operator && Number(value) >= Number(c.value) + 1)
+            result = true;
+
+          // Always pass
+          ops = ["!=", ">=", ">", "not in"];
+          if ("!=" === operator) result = true;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val >= c.value))
+              result = true;
+          }
+          break;
+        case "<=":
+          /**
+           *  c = (L <= 500)
+           *  L == 500↓
+           *  L != any
+           *  L >= 500↓
+           *  L <= any
+           *  L > 499↓
+           *  L < any
+           */
+
+          // Must be smaller than the value
+          ops = ["==", ">="];
+          if (ops.includes(operator) && value <= c.value) result = true;
+
+          if (">" === operator && Number(value) >= Number(c.value) - 1)
+            result = true;
+
+          // Always pass
+          ops = ["!=", "<=", "<", "not in"];
+          if ("!=" === operator) result = true;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => val <= c.value))
+              result = true;
+          }
+          break;
+        case "in":
+          /**
+           *  c = (L [500,501)
+           *  IN [500, 502]
+           *  NOT IN [499, 500]
+           */
+
+          // For each item run the same checks as for the '==' operator
+          for (const subVal of this.#asArray(c.value)) {
             // Must be equal to the value irrelevant of the operator
             ops = ["==", ">=", "<="];
-            if (ops.includes(operator) && value === c.value) result = true;
+            if (ops.includes(operator) && value === subVal) result = true;
 
             // Item value must allow for constraint value to exist in item value range
-            if ("<" === operator && value > c.value) result = true;
-            if (">" === operator && value < c.value) result = true;
+            if ("<" === operator && value > subVal) result = true;
+            if (">" === operator && value < subVal) result = true;
 
             // Item value cannot be equal to constraint value
-            if ("!=" === operator && value !== c.value) result = true;
+            if ("!=" === operator && value !== subVal) result = true;
+          }
 
-            // One of the values in the item must match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val === c.value))
-                result = true;
-            }
+          // One of the values in the item must match any candidate values
+          const inValues = this.#asArray(c.value);
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => inValues.includes(val)))
+              result = true;
+          }
 
-            // None of the values in the item must match the candidate value
-            if ("not in" === operator) {
-              if (!this.#asArray(value).some((val) => val === c.value))
-                result = true;
-            }
-            break;
-          case "!=":
-            /**
-             *  c = (L != 500)
-             *  L == !500
-             *  L != any
-             *  L >= any
-             *  L <= any
-             *  L > any
-             *  L < any
-             *  L IN [500, 502]
-             *  L NOT IN [499,500]
-             */
+          // One of the values in the item must NOT match any candidate values
+          if ("not in" === operator) {
+            if (this.#asArray(value).some((val) => !inValues.includes(val)))
+              result = true;
+          }
+          break;
+        case "not in":
+          /**
+           *  c = (L NOT IN [500,501)
+           *  IN [499, 501]
+           *  NOT IN [500, 499]
+           */
 
+          // Always pass
+          if ("not in" === operator) result = true;
+
+          // For each item run the same checks as for the '!=' operator
+          for (const subVal of this.#asArray(c.value)) {
             // Must be different
-            if ("==" === operator && value !== c.value) result = true;
+            if ("==" === operator && value !== subVal) result = true;
 
             // Always pass
             ops = ["!=", ">", ">=", "<", "<=", "not in"];
             if (ops.includes(operator)) result = true;
+          }
 
-            // One of the values in the item must NOT match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val !== c.value))
-                result = true;
-            }
-            break;
-          case ">":
-            /**
-             *  c = (L > 500)
-             *  L == 501↑
-             *  L != any
-             *  L >= any
-             *  L <= 501↑
-             *  L > any
-             *  L < 502↑
-             *  IN [501, 502]
-             *  NOT IN [501, 502]
-             */
-
-            // Must be bigger than the value
-            ops = ["==", "<="];
-            if (ops.includes(operator) && value > c.value) result = true;
-
-            if ("<" === operator && Number(value) > Number(c.value) + 2)
+          // One of the values in the item must NOT match any candidate values
+          const nInValues = this.#asArray(c.value);
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => !nInValues.includes(val)))
               result = true;
-
-            // Always pass
-            ops = ["!=", ">", ">=", "not in"];
-            if (ops.includes(operator)) result = true;
-
-            // One of the values in the item must match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val > c.value))
-                result = true;
-            }
-            break;
-          case "<":
-            /**
-             *  c = (L < 500)
-             *  L == 499↓
-             *  L != any
-             *  L >= 499↓
-             *  L <= any
-             *  L > 498↓
-             *  L < any
-             *  IN [499, 500]
-             */
-
-            // Must be smaller than the value
-            ops = ["==", ">="];
-            if (ops.includes(operator) && value < c.value) result = true;
-
-            if (">" === operator && Number(value) < Number(c.value) - 2)
-              result = true;
-
-            // Always pass
-            ops = ["!=", "<", "<=", "not in"];
-            if (ops.includes(operator)) result = true;
-
-            // One of the values in the item must match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val < c.value))
-                result = true;
-            }
-            break;
-          case ">=":
-            /**
-             *  c = (L >= 500)
-             *  L == 500↑
-             *  L != any
-             *  L >= any
-             *  L <= 500↑
-             *  L > any
-             *  L < 501↑
-             *  L IN [500, 501]
-             */
-
-            // Must be bigger than the value
-            ops = ["==", "<="];
-            if (ops.includes(operator) && value >= c.value) result = true;
-
-            if ("<" === operator && Number(value) >= Number(c.value) + 1)
-              result = true;
-
-            // Always pass
-            ops = ["!=", ">=", ">", "not in"];
-            if ("!=" === operator) result = true;
-
-            // One of the values in the item must match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val >= c.value))
-                result = true;
-            }
-            break;
-          case "<=":
-            /**
-             *  c = (L <= 500)
-             *  L == 500↓
-             *  L != any
-             *  L >= 500↓
-             *  L <= any
-             *  L > 499↓
-             *  L < any
-             */
-
-            // Must be smaller than the value
-            ops = ["==", ">="];
-            if (ops.includes(operator) && value <= c.value) result = true;
-
-            if (">" === operator && Number(value) >= Number(c.value) - 1)
-              result = true;
-
-            // Always pass
-            ops = ["!=", "<=", "<", "not in"];
-            if ("!=" === operator) result = true;
-
-            // One of the values in the item must match the candidate value
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => val <= c.value))
-                result = true;
-            }
-            break;
-          case "in":
-            /**
-             *  c = (L [500,501)
-             *  IN [500, 502]
-             *  NOT IN [499, 500]
-             */
-
-            // For each item run the same checks as for the '==' operator
-            for (const subVal of this.#asArray(c.value)) {
-              // Must be equal to the value irrelevant of the operator
-              ops = ["==", ">=", "<="];
-              if (ops.includes(operator) && value === subVal) result = true;
-
-              // Item value must allow for constraint value to exist in item value range
-              if ("<" === operator && value > subVal) result = true;
-              if (">" === operator && value < subVal) result = true;
-
-              // Item value cannot be equal to constraint value
-              if ("!=" === operator && value !== subVal) result = true;
-            }
-
-            // One of the values in the item must match any candidate values
-            const inValues = this.#asArray(c.value);
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => inValues.includes(val)))
-                result = true;
-            }
-
-            // One of the values in the item must NOT match any candidate values
-            if ("not in" === operator) {
-              if (this.#asArray(value).some((val) => !inValues.includes(val)))
-                result = true;
-            }
-            break;
-          case "not in":
-            /**
-             *  c = (L NOT IN [500,501)
-             *  IN [499, 501]
-             *  NOT IN [500, 499]
-             */
-
-            // Always pass
-            if ("not in" === operator) result = true;
-
-            // For each item run the same checks as for the '!=' operator
-            for (const subVal of this.#asArray(c.value)) {
-              // Must be different
-              if ("==" === operator && value !== subVal) result = true;
-
-              // Always pass
-              ops = ["!=", ">", ">=", "<", "<=", "not in"];
-              if (ops.includes(operator)) result = true;
-            }
-
-            // One of the values in the item must NOT match any candidate values
-            const nInValues = this.#asArray(c.value);
-            if ("in" === operator) {
-              if (this.#asArray(value).some((val) => !nInValues.includes(val)))
-                result = true;
-            }
-            break;
-          // case "contains":
-          //   break;
-          // case "not contains":
-          //   break;
-          // case "contains any":
-          //   break;
-          // case "not contains any":
-          //   break;
-          // case "matches":
-          //   break;
-          // case "not matches":
-          //   break;
-        }
+          }
+          break;
+        // case "contains":
+        //   break;
+        // case "not contains":
+        //   break;
+        // case "contains any":
+        //   break;
+        // case "not contains any":
+        //   break;
+        // case "matches":
+        //   break;
+        // case "not matches":
+        //   break;
       }
     }
 
@@ -855,26 +844,57 @@ export class Introspector {
   /**
    *
    * @param candidates The constraints to sanitize.
-   * @param type The type of the condition holding the constraints.
    * @param depth The current recursion depth.
    */
-  #sanitizeCandidates(
-    candidates: Constraint[],
-    type: ConditionType,
-    depth: number
-  ): Constraint[] {
+  #sanitizeCandidates(candidates: Constraint[], depth: number): Constraint[] {
+    // If the list less than 2 items, we can return it as is
     if (candidates.length < 2) return candidates;
 
     const gap = "  ".repeat(depth);
-    const msg = ` ${gap}> ${this.#txtCol(`Sanitizing (${type})`, "b")}:`;
+    const msg = ` ${gap}> ${this.#txtCol(`Sanitizing`, "b")}:`;
 
     const values = [];
     for (const c of candidates) {
       values.push(`${c.operator}${this.#txtCol(c.value, "m")}`);
     }
 
-    Logger.debug(`${msg} ${values.join(", ")}`);
-    return candidates;
+    // Flag to indicate if the list has been modified
+    let modified = false;
+
+    // Search for candidates with <,>,<=,>= operators
+    for (const c of candidates) {
+      if (["<", ">", "<=", ">="].includes(c.operator)) {
+        const index = candidates.indexOf(c);
+        const val = c.value;
+        const op = c.operator;
+
+        for (let i = 0; i < candidates.length; i++) {
+          if (i === index) continue;
+
+          const item = candidates[i];
+          if (item.operator === "==") {
+            if (["<=", ">="].includes(op)) {
+              delete candidates[i];
+              modified = true;
+            }
+
+            if ("<" === op && item.value < val) {
+              delete candidates[i];
+              modified = true;
+            }
+
+            if (">" === op && item.value > val) {
+              console.log("sdasd");
+              delete candidates[i];
+              modified = true;
+            }
+          }
+        }
+      }
+    }
+
+    !modified && Logger.debug(`${msg} ${values.join(", ")}`);
+    return modified ? this.#sanitizeCandidates(candidates, depth) : candidates;
   }
 
   /**
@@ -960,6 +980,7 @@ export class Introspector {
    * Algorithm:
    *  -> Prepare all constraints as array
    *  -> Prepare all conditions as array
+   *    -> Sort the array to push ‘all’ conditions to the start
    *  -> Check constraints first
    *    ->  If parent is NULL
    *      -> if type is any
@@ -992,13 +1013,13 @@ export class Introspector {
    *      -> If parent is all
    *        -> if type is any
    *          -> group const by field (and foreach group)
-   *            -> test each const against global group results or subject value
+   *            -> bal group results or subject value
    *              -> if passes
    *                -> add to global group results
    *              -> if fails
    *                -> do not add
    *              -> if all fail
-   *                -> empty global group results
+   *                -> empty the local/global results for all subjects
    *                -> stop processing any conditions under this node.
    *        -> if type is all
    *          -> group const by field (and foreach group)
