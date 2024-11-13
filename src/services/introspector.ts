@@ -413,7 +413,7 @@ export class Introspector {
         }
 
         if ("all" === type) {
-          if (!this.#test(candidates, input, c, depth)) {
+          if (!this.test(candidates, input, c, depth)) {
             candidates = [];
             Logger.debug(` ${gap}- Clearing all local`);
             break;
@@ -450,7 +450,7 @@ export class Introspector {
           const valid = [];
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
-            if (this.#test(parentRes, input, c, depth)) valid.push(c);
+            if (this.test(parentRes, input, c, depth)) valid.push(c);
           }
 
           if (!valid.length) {
@@ -467,7 +467,7 @@ export class Introspector {
           let allPass = candidates.length > 0;
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
-            if (!this.#test(parentRes, input, c, depth)) allPass = false;
+            if (!this.test(parentRes, input, c, depth)) allPass = false;
           }
 
           if (!allPass) {
@@ -499,7 +499,7 @@ export class Introspector {
     // Sanitize the results
     ////////////////////////////////////////////////////////////
     for (const [field, constraints] of parentResults.entries()) {
-      parentResults.set(field, this.#sanitize(constraints, depth));
+      parentResults.set(field, this.sanitize(constraints, depth));
     }
     ////////////////////////////////////////////////////////////
 
@@ -548,7 +548,7 @@ export class Introspector {
    * @param item The constraint item to test against the candidates.
    * @param depth The current recursion depth.
    */
-  #test(
+  protected test(
     candidates: Constraint[],
     input: Omit<Constraint, "operator">,
     item: Constraint,
@@ -737,7 +737,7 @@ export class Introspector {
           ops = ["==", ">="];
           if (ops.includes(operator) && value > c.value) result = false;
 
-          if (">" === operator && Number(value) < Number(c.value) - 1)
+          if (">" === operator && Number(value) > Number(c.value) - 1)
             result = false;
 
           // One of the values in the item must match the candidate value
@@ -752,49 +752,50 @@ export class Introspector {
            *  IN [500, 502]
            *  NOT IN [499, 500]
            */
-          let inSubRes = false;
-          let inChecked = false;
+          result = false;
 
+          // At least 1 item from list must pass
           // For each item run the same checks as for the '==' operator
-          // If none of the items pass, then fail
           for (const subVal of this.#asArray(c.value)) {
-            // Must be equal to the value irrelevant of the operator
-            ops = ["==", ">=", "<="];
-            if (ops.includes(operator) && value !== subVal) {
-              inSubRes = true;
-              inChecked = true;
+            // Must be equal to the value
+            if ("==" === operator && value === subVal) {
+              result = true;
+            }
+
+            // Item value must allow for constraint value to exist in item value range
+            if ("<=" === operator && value >= subVal) {
+              result = true;
+            }
+            if (">=" === operator && value <= subVal) {
+              result = true;
             }
 
             // Item value must allow for constraint value to exist in item value range
             if ("<" === operator && value > subVal) {
-              inSubRes = true;
-              inChecked = true;
+              result = true;
             }
             if (">" === operator && value < subVal) {
-              inSubRes = true;
-              inChecked = true;
+              result = true;
             }
 
             // Item value cannot be equal to constraint value
             if ("!=" === operator && value !== subVal) {
-              inSubRes = true;
-              inChecked = true;
+              result = true;
             }
           }
 
-          if (inChecked && !inSubRes) result = false;
+          const inValues = this.#asArray(c.value);
 
           // One of the values in the item must match any candidate values
-          const inValues = this.#asArray(c.value);
           if ("in" === operator) {
-            if (!this.#asArray(value).some((val) => inValues.includes(val)))
-              result = false;
+            if (this.#asArray(value).some((val) => inValues.includes(val)))
+              result = true;
           }
 
           // One of the values in the item must NOT match any candidate values
           if ("not in" === operator) {
-            if (!this.#asArray(value).some((val) => !inValues.includes(val)))
-              result = false;
+            if (this.#asArray(value).some((val) => !inValues.includes(val)))
+              result = true;
           }
           break;
         case "not in":
@@ -803,36 +804,22 @@ export class Introspector {
            *  IN [499, 501]
            *  NOT IN [500, 499]
            */
+          result = true;
 
-          // Always pass ["not in"]
-
-          let notInSubRes = false;
-          let notInChecked = false;
-
-          // For each item run the same checks as for the '!=' operator
-          // If none of the items pass, then fail
+          // All items from list must pass
           for (const subVal of this.#asArray(c.value)) {
             // Must be different
-            if ("==" === operator && value !== subVal) {
-              notInSubRes = true;
-              notInChecked = true;
-            }
-
-            // Always pass
-            ops = ["!=", ">", ">=", "<", "<=", "not in"];
-            if (ops.includes(operator)) {
-              notInSubRes = true;
-              notInChecked = true;
+            if ("==" === operator && value === subVal) {
+              result = false;
             }
           }
 
-          if (notInChecked && !notInSubRes) result = false;
+          const notInValues = this.#asArray(c.value);
 
           // One of the values in the item must NOT match any candidate values
-          const nInValues = this.#asArray(c.value);
           if ("in" === operator) {
-            if (!this.#asArray(value).some((val) => !nInValues.includes(val)))
-              result = false;
+            if (this.#asArray(value).some((val) => !notInValues.includes(val)))
+              result = true;
           }
           break;
         // case "contains":
@@ -874,7 +861,7 @@ export class Introspector {
    * @param constraints The constraints to sanitize.
    * @param depth The current recursion depth.
    */
-  #sanitize(constraints: Constraint[], depth: number): Constraint[] {
+  protected sanitize(constraints: Constraint[], depth: number): Constraint[] {
     // Flag to indicate if the list has been modified
     let modified = false;
 
@@ -968,7 +955,7 @@ export class Introspector {
     );
 
     !modified && Logger.debug(`${msg} [${values.join(", ")}]`);
-    return modified ? this.#sanitize(results, depth) : results;
+    return modified ? this.sanitize(results, depth) : results;
   }
 
   /**
