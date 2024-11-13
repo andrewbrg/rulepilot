@@ -8,10 +8,19 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: ArtiomTr/jest-coverage-report-action@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          test-script: yarn jest --testPathPattern=test --color --forceExit --coverage
-      - run: yarn
-      - run: yarn build
-      - run: yarn test
+          node-version: '20'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Install dependencies
+        run: yarn build
+
+      - name: Run Jest tests
+        run: yarn test
