@@ -487,6 +487,15 @@ export class Introspector {
         }
       }
 
+      const existing = (parentResults.get(field) ?? []).map(
+        (r) => `${r.operator}${this.#txtCol(r.value, "m")}`
+      );
+      Logger.debug(
+        ` ${gap}> ${this.#txtCol("Merging into", "b")}: [${existing.join(
+          ", "
+        )}]`
+      );
+
       // Add the local results to the parent results
       this.#sanitizeCandidates(candidates, depth).forEach((c) =>
         this.#appendResult(parentResults, c)
@@ -562,10 +571,24 @@ export class Introspector {
     // Add the input constraint to the results (if it also matches the field)
     if (inputMatches) candidates.push({ ...input, operator: "==" });
 
-    if (!candidates.length) return true;
+    // Prepare the log
+    const gap = "  ".repeat(depth);
+    const col = this.#txtCol(item.field, "g");
+    const val = this.#txtCol(item.value, "y");
+    const pass = this.#txtCol("pass", "g");
+    const fail = this.#txtCol("fail", "r");
+
+    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
+
+    if (!candidates.length) {
+      Logger.debug(msg, `(${pass})`);
+      return true;
+    }
 
     // Test that the constraint does not breach the results
-    let result = false;
+    // The test constraint needs to be compared against all the results
+    // and has to pass all the tests to be considered valid
+    let result = true;
     for (const c of candidates) {
       let ops: any;
 
@@ -588,25 +611,25 @@ export class Introspector {
 
           // Must be equal to the value irrelevant of the operator
           ops = ["==", ">=", "<="];
-          if (ops.includes(operator) && value === c.value) result = true;
+          if (ops.includes(operator) && value !== c.value) result = false;
 
           // Item value must allow for constraint value to exist in item value range
-          if ("<" === operator && value > c.value) result = true;
-          if (">" === operator && value < c.value) result = true;
+          if ("<" === operator && value <= c.value) result = false;
+          if (">" === operator && value >= c.value) result = false;
 
           // Item value cannot be equal to constraint value
-          if ("!=" === operator && value !== c.value) result = true;
+          if ("!=" === operator && value === c.value) result = false;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val === c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val === c.value))
+              result = false;
           }
 
           // None of the values in the item must match the candidate value
           if ("not in" === operator) {
-            if (!this.#asArray(value).some((val) => val === c.value))
-              result = true;
+            if (this.#asArray(value).some((val) => val === c.value))
+              result = false;
           }
           break;
         case "!=":
@@ -623,16 +646,16 @@ export class Introspector {
            */
 
           // Must be different
-          if ("==" === operator && value !== c.value) result = true;
+          if ("==" === operator && value === c.value) result = false;
 
-          // Always pass
-          ops = ["!=", ">", ">=", "<", "<=", "not in"];
-          if (ops.includes(operator)) result = true;
+          // // Always pass
+          // ops = ["!=", ">", ">=", "<", "<=", "not in"];
+          // if (ops.includes(operator)) result = true;
 
           // One of the values in the item must NOT match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val !== c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val !== c.value))
+              result = false;
           }
           break;
         case ">":
@@ -650,19 +673,19 @@ export class Introspector {
 
           // Must be bigger than the value
           ops = ["==", "<="];
-          if (ops.includes(operator) && value > c.value) result = true;
+          if (ops.includes(operator) && value <= c.value) result = false;
 
-          if ("<" === operator && Number(value) > Number(c.value) + 2)
-            result = true;
+          if ("<" === operator && Number(value) <= Number(c.value) + 2)
+            result = false;
 
-          // Always pass
-          ops = ["!=", ">", ">=", "not in"];
-          if (ops.includes(operator)) result = true;
+          // // Always pass
+          // ops = ["!=", ">", ">=", "not in"];
+          // if (ops.includes(operator)) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val > c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val > c.value))
+              result = false;
           }
           break;
         case "<":
@@ -679,19 +702,19 @@ export class Introspector {
 
           // Must be smaller than the value
           ops = ["==", ">="];
-          if (ops.includes(operator) && value < c.value) result = true;
+          if (ops.includes(operator) && value >= c.value) result = false;
 
-          if (">" === operator && Number(value) < Number(c.value) - 2)
-            result = true;
+          if (">" === operator && Number(value) >= Number(c.value) - 2)
+            result = false;
 
-          // Always pass
-          ops = ["!=", "<", "<=", "not in"];
-          if (ops.includes(operator)) result = true;
+          // // Always pass
+          // ops = ["!=", "<", "<=", "not in"];
+          // if (ops.includes(operator)) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val < c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val < c.value))
+              result = false;
           }
           break;
         case ">=":
@@ -708,19 +731,19 @@ export class Introspector {
 
           // Must be bigger than the value
           ops = ["==", "<="];
-          if (ops.includes(operator) && value >= c.value) result = true;
+          if (ops.includes(operator) && value < c.value) result = false;
 
-          if ("<" === operator && Number(value) >= Number(c.value) + 1)
-            result = true;
+          if ("<" === operator && Number(value) < Number(c.value) + 1)
+            result = false;
 
           // Always pass
-          ops = ["!=", ">=", ">", "not in"];
-          if ("!=" === operator) result = true;
+          // ops = ["!=", ">=", ">", "not in"];
+          // if ("!=" === operator) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val >= c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val >= c.value))
+              result = false;
           }
           break;
         case "<=":
@@ -736,19 +759,19 @@ export class Introspector {
 
           // Must be smaller than the value
           ops = ["==", ">="];
-          if (ops.includes(operator) && value <= c.value) result = true;
+          if (ops.includes(operator) && value > c.value) result = false;
 
-          if (">" === operator && Number(value) >= Number(c.value) - 1)
-            result = true;
+          if (">" === operator && Number(value) < Number(c.value) - 1)
+            result = false;
 
-          // Always pass
-          ops = ["!=", "<=", "<", "not in"];
-          if ("!=" === operator) result = true;
+          // // Always pass
+          // ops = ["!=", "<=", "<", "not in"];
+          // if ("!=" === operator) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => val <= c.value))
-              result = true;
+            if (!this.#asArray(value).some((val) => val <= c.value))
+              result = false;
           }
           break;
         case "in":
@@ -757,32 +780,49 @@ export class Introspector {
            *  IN [500, 502]
            *  NOT IN [499, 500]
            */
+          let inSubRes = false;
+          let inChecked = false;
 
           // For each item run the same checks as for the '==' operator
+          // If none of the items pass, then fail
           for (const subVal of this.#asArray(c.value)) {
             // Must be equal to the value irrelevant of the operator
             ops = ["==", ">=", "<="];
-            if (ops.includes(operator) && value === subVal) result = true;
+            if (ops.includes(operator) && value !== subVal) {
+              inSubRes = true;
+              inChecked = true;
+            }
 
             // Item value must allow for constraint value to exist in item value range
-            if ("<" === operator && value > subVal) result = true;
-            if (">" === operator && value < subVal) result = true;
+            if ("<" === operator && value > subVal) {
+              inSubRes = true;
+              inChecked = true;
+            }
+            if (">" === operator && value < subVal) {
+              inSubRes = true;
+              inChecked = true;
+            }
 
             // Item value cannot be equal to constraint value
-            if ("!=" === operator && value !== subVal) result = true;
+            if ("!=" === operator && value !== subVal) {
+              inSubRes = true;
+              inChecked = true;
+            }
           }
+
+          if (inChecked && !inSubRes) result = false;
 
           // One of the values in the item must match any candidate values
           const inValues = this.#asArray(c.value);
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => inValues.includes(val)))
-              result = true;
+            if (!this.#asArray(value).some((val) => inValues.includes(val)))
+              result = false;
           }
 
           // One of the values in the item must NOT match any candidate values
           if ("not in" === operator) {
-            if (this.#asArray(value).some((val) => !inValues.includes(val)))
-              result = true;
+            if (!this.#asArray(value).some((val) => !inValues.includes(val)))
+              result = false;
           }
           break;
         case "not in":
@@ -792,24 +832,36 @@ export class Introspector {
            *  NOT IN [500, 499]
            */
 
-          // Always pass
-          if ("not in" === operator) result = true;
+          // // Always pass
+          // if ("not in" === operator) result = true;
+
+          let notInSubRes = false;
+          let notInChecked = false;
 
           // For each item run the same checks as for the '!=' operator
+          // If none of the items pass, then fail
           for (const subVal of this.#asArray(c.value)) {
             // Must be different
-            if ("==" === operator && value !== subVal) result = true;
+            if ("==" === operator && value !== subVal) {
+              notInSubRes = true;
+              notInChecked = true;
+            }
 
             // Always pass
             ops = ["!=", ">", ">=", "<", "<=", "not in"];
-            if (ops.includes(operator)) result = true;
+            if (ops.includes(operator)) {
+              notInSubRes = true;
+              notInChecked = true;
+            }
           }
+
+          if (notInChecked && !notInSubRes) result = false;
 
           // One of the values in the item must NOT match any candidate values
           const nInValues = this.#asArray(c.value);
           if ("in" === operator) {
-            if (this.#asArray(value).some((val) => !nInValues.includes(val)))
-              result = true;
+            if (!this.#asArray(value).some((val) => !nInValues.includes(val)))
+              result = false;
           }
           break;
         // case "contains":
@@ -827,14 +879,6 @@ export class Introspector {
       }
     }
 
-    // Prepare the log
-    const gap = "  ".repeat(depth);
-    const col = this.#txtCol(item.field, "g");
-    const val = this.#txtCol(item.value, "y");
-    const pass = this.#txtCol("pass", "g");
-    const fail = this.#txtCol("fail", "r");
-
-    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
     Logger.debug(msg, `(${result ? pass : fail})`);
 
     // Return the result
@@ -884,7 +928,6 @@ export class Introspector {
             }
 
             if (">" === op && item.value > val) {
-              console.log("sdasd");
               delete candidates[i];
               modified = true;
             }
@@ -893,7 +936,7 @@ export class Introspector {
       }
     }
 
-    !modified && Logger.debug(`${msg} ${values.join(", ")}`);
+    !modified && Logger.debug(`${msg} [${values.join(", ")}]`);
     return modified ? this.#sanitizeCandidates(candidates, depth) : candidates;
   }
 

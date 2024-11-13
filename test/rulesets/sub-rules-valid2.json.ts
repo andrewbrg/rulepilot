@@ -15,7 +15,7 @@ export const subRulesValid2Json: Rule = {
         },
         {
           field: "Leverage",
-          operator: "==",
+          operator: "!=",
           value: 500,
         },
         {
@@ -30,8 +30,22 @@ export const subRulesValid2Json: Rule = {
               operator: "==",
               value: 500,
             },
+            {
+              any: [
+                {
+                  field: "Leverage",
+                  operator: "==",
+                  value: 2000,
+                },
+                {
+                  field: "Leverage",
+                  operator: "==",
+                  value: 1500,
+                },
+              ],
+              result: 100,
+            },
           ],
-          result: 100,
         },
       ],
       result: 50,
