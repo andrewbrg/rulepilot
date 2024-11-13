@@ -862,9 +862,6 @@ export class Introspector {
    * @param depth The current recursion depth.
    */
   protected sanitize(constraints: Constraint[], depth: number): Constraint[] {
-    // Flag to indicate if the list has been modified
-    let modified = false;
-
     // Create a results list which we can modify
     let results = JSON.parse(JSON.stringify(constraints));
 
@@ -880,9 +877,7 @@ export class Introspector {
 
         if (">=" === op) {
           if ("==" === c.operator && c.value === val) {
-            results = this.#removeItem(c, results);
-            modified = true;
-            break;
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
           }
 
           if (">" === c.operator) {
@@ -890,8 +885,8 @@ export class Introspector {
             if (c.value >= val) results = this.#removeItem(c, results);
             // >=500, >499- (remove >=500)
             if (c.value < val) results = this.#removeItem(sub, results);
-            modified = true;
-            break;
+
+            return this.sanitize(results, depth + 1);
           }
 
           if (">=" === c.operator) {
@@ -899,16 +894,14 @@ export class Introspector {
             if (c.value >= val) results = this.#removeItem(c, results);
             // >=500, >=499- (remove >=500)
             if (c.value < val) results = this.#removeItem(sub, results);
-            modified = true;
-            break;
+
+            return this.sanitize(results, depth + 1);
           }
         }
 
         if ("<=" === op) {
           if ("==" === c.operator && c.value === val) {
-            results = this.#removeItem(c, results);
-            modified = true;
-            break;
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
           }
 
           if ("<" === c.operator) {
@@ -916,8 +909,8 @@ export class Introspector {
             if (c.value <= val) results = this.#removeItem(c, results);
             // <=500, <501+ (remove >=500)
             if (c.value > val) results = this.#removeItem(sub, results);
-            modified = true;
-            break;
+
+            return this.sanitize(results, depth + 1);
           }
 
           if ("<=" === c.operator) {
@@ -925,25 +918,93 @@ export class Introspector {
             if (c.value <= val) results = this.#removeItem(c, results);
             // <=500, <501+ (remove >=500)
             if (c.value > val) results = this.#removeItem(sub, results);
-            modified = true;
-            break;
+
+            return this.sanitize(results, depth + 1);
           }
         }
 
         if (">" === op) {
           if ("==" === c.operator && c.value > val) {
-            results = this.#removeItem(c, results);
-            modified = true;
-            break;
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
+          }
+
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, operator: ">=" });
+
+            return this.sanitize(results, depth + 1);
+          }
+
+          if (">" === c.operator && c.value >= val) {
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
           }
         }
 
         if ("<" === op) {
           if ("==" === c.operator && c.value < val) {
-            results = this.#removeItem(c, results);
-            modified = true;
-            break;
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
           }
+
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, operator: "<=" });
+
+            return this.sanitize(results, depth + 1);
+          }
+
+          if ("<" === c.operator && c.value <= val) {
+            return this.sanitize(this.#removeItem(c, results), depth + 1);
+          }
+        }
+
+        if ("in" === op) {
+          // We join the two lists and remove the duplicates
+          if ("in" === c.operator) {
+            const set = new Set([
+              ...this.#asArray(val),
+              ...this.#asArray(c.value),
+            ]);
+
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, value: [...set].sort() });
+
+            return this.sanitize(results, depth + 1);
+          }
+        }
+
+        if ("not in" === op) {
+          // We join the two lists and remove the duplicates
+          if ("not in" === c.operator) {
+            const set = new Set([
+              ...this.#asArray(val),
+              ...this.#asArray(c.value),
+            ]);
+
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, value: [...set].sort() });
+
+            return this.sanitize(results, depth + 1);
+          }
+        }
+      }
+
+      // If the list has 1 item, we convert to ==
+      if (["in"].includes(op)) {
+        if (1 === this.#asArray(sub.value).length) {
+          results = this.#removeItem(sub, results);
+          results.push({ field: sub.field, operator: "==", value: val });
+
+          return this.sanitize(results, depth + 1);
+        }
+      }
+
+      // If the list has 1 item, we convert to !=
+      if (["not in"].includes(op)) {
+        if (1 === this.#asArray(sub.value).length) {
+          results = this.#removeItem(sub, results);
+          results.push({ field: sub.field, operator: "!=", value: val });
+
+          return this.sanitize(results, depth + 1);
         }
       }
     }
@@ -954,8 +1015,8 @@ export class Introspector {
       (c: Constraint) => `${c.operator}${Logger.color(c.value, "m")}`
     );
 
-    !modified && Logger.debug(`${msg} [${values.join(", ")}]`);
-    return modified ? this.sanitize(results, depth) : results;
+    Logger.debug(`${msg} [${values.join(", ")}]`);
+    return results;
   }
 
   /**

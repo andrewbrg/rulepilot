@@ -108,6 +108,80 @@ describe("RulePilot introspector correctly", () => {
     expect(RulePilot.introspect(valid9Json, con, sub)).toEqual({});
   });
 
+  it("Sanitizes results correctly", async () => {
+    let results: Constraint[] = [
+      { field: "Lev", value: 200, operator: "<" },
+      { field: "Lev", value: 200, operator: "==" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: 200, operator: "<=" },
+    ]);
+
+    results = [
+      { field: "Lev", value: 200, operator: ">" },
+      { field: "Lev", value: 200, operator: "==" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: 200, operator: ">=" },
+    ]);
+
+    results = [
+      { field: "Lev", value: 200, operator: ">" },
+      { field: "Lev", value: 300, operator: ">" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: 200, operator: ">" },
+    ]);
+
+    results = [
+      { field: "Lev", value: 200, operator: "<" },
+      { field: "Lev", value: 300, operator: "<" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: 300, operator: "<" },
+    ]);
+
+    results = [
+      { field: "Lev", value: [200], operator: "in" },
+      { field: "Lev", value: [200, 300], operator: "in" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: [200, 300], operator: "in" },
+    ]);
+
+    results = [
+      { field: "Lev", value: [400], operator: "in" },
+      { field: "Lev", value: [200, 300], operator: "in" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: [200, 300, 400], operator: "in" },
+    ]);
+
+    results = [
+      { field: "Lev", value: [200], operator: "not in" },
+      { field: "Lev", value: [200, 300], operator: "not in" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: [200, 300], operator: "not in" },
+    ]);
+
+    results = [
+      { field: "Lev", value: [400], operator: "not in" },
+      { field: "Lev", value: [200, 300], operator: "not in" },
+    ];
+
+    expect(IntrospectorSpec.sanitizeFn(results)).toEqual([
+      { field: "Lev", value: [200, 300, 400], operator: "not in" },
+    ]);
+  });
+
   it("Tests new introspection candidates against existing ones", async () => {
     const input = { field: "Category", value: 30 };
 
@@ -251,6 +325,18 @@ describe("RulePilot introspector correctly", () => {
     expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
 
     item = { field: "Lev", value: 99, operator: ">" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [200, 300], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [300], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
+
+    item = { field: "Lev", value: [200, 300], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
+
+    item = { field: "Lev", value: [300], operator: "not in" };
     expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
 
     //
