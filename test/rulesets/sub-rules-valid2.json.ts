@@ -110,7 +110,7 @@ export const subRulesValid2Json: Rule = {
             {
               field: "Leverage",
               operator: ">",
-              value: 500,
+              value: 400,
             },
             {
               field: "Monetization",

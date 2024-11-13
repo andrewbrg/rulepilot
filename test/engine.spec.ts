@@ -299,7 +299,7 @@ describe("RulePilot engine correctly", () => {
     expect(
       await RulePilot.evaluate(subRulesValid2Json, {
         Category: "Demo",
-        Leverage: 600,
+        Leverage: 500,
         CountryIso: "GB",
         Monetization: "Real",
       })
