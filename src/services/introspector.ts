@@ -29,6 +29,9 @@ export class Introspector {
     // We care about all the possible values for the subjects which will satisfy
     // the rule if the rule is tested against the constraint provided.
 
+    // To proceed we must first clone the rule (to avoid modifying the original)
+    rule = JSON.parse(JSON.stringify(rule));
+
     // First step is to simplify the rule:
     // 1. Make sure the rule conditions is an array.
     // 2. Convert any 'none' conditions to an 'all' and reverse operators of all children till the bottom.
@@ -67,7 +70,6 @@ export class Introspector {
       conditions.push({ all: [rule.parent, rule.subRule], result });
     });
 
-    // todo remove
     console.log("subRules", JSON.stringify(subRules));
     console.log("conditions", JSON.stringify(conditions));
 
@@ -82,7 +84,6 @@ export class Introspector {
       if (!values) continue;
 
       const key = condition.result ?? "default";
-      results[key] = results[key] ?? {};
 
       // Merge the results maintaining the uniqueness of the values
       for (const [field, constraints] of values.entries()) {
@@ -93,13 +94,15 @@ export class Introspector {
           set.add({ value: constraint.value, operator: constraint.operator });
         }
 
-        results[key][field] = Array.from(set);
+        if (set.size) {
+          results[key] = {};
+          results[key][field] = Array.from(set);
+        }
       }
     }
 
     console.log("Results", JSON.stringify(results));
-
-    return null;
+    return results;
   }
 
   /**
@@ -130,8 +133,15 @@ export class Introspector {
     }
 
     if (shouldFlip) {
-      condition["all"] = condition[type];
-      delete condition[type];
+      if ("none" === type) {
+        condition["all"] = condition[type];
+        delete condition[type];
+      }
+
+      if ("any" === type) {
+        condition["all"] = condition[type];
+        delete condition[type];
+      }
     }
 
     return this.#stripNullProps(condition);
@@ -389,120 +399,94 @@ export class Introspector {
     // Iterate over all grouped constraints
     for (const [field, constraints] of groupedConst.entries()) {
       // Prepare the local results
-      const candidates: Constraint[] = [];
+      let candidates: Constraint[] = [];
 
-      if (!parentType) {
-        if ("any" === type)
-          for (const c of constraints) {
-            this.#appendResult(parentResults, c);
-
-            const gap = "  ".repeat(depth);
-            const col = this.#txtCol(c.field, "g");
-            const val = this.#txtCol(c.value, "y");
-            const msg = ` ${gap}+ Adding '${col}'${c.operator}'${val}'`;
-            Logger.debug(msg, `(${this.#txtCol("pass", "g")})`);
-          }
-
-        if ("all" === type) {
-          for (const c of constraints) {
-            // Test against the local results, if it fails, empty the results and return
-            if (!this.#test(candidates, input, c, depth)) {
-              Logger.debug(`${gap}X Exiting & discarding results...`);
-
-              // Stop processing condition & empty the results
-              return { stop: true, void: true };
-            }
-
-            // Append to local results
-            candidates.push(c);
-          }
-        }
-      }
-
-      if ("any" == parentType) {
+      // Test the constraints and prepare the local results
+      ////////////////////////////////////////////////////////////
+      for (const c of constraints) {
+        // Append to local results
         if ("any" === type) {
-          for (const c of constraints) {
-            this.#appendResult(parentResults, c);
+          const col = this.#txtCol(c.field, "g");
+          const val = this.#txtCol(c.value, "y");
+          const msg = ` ${gap}+ Adding local '${col}'${c.operator}'${val}'`;
+          Logger.debug(msg, `(${this.#txtCol("pass", "g")})`);
 
-            const gap = "  ".repeat(depth);
-            const col = this.#txtCol(c.field, "g");
-            const val = this.#txtCol(c.value, "y");
-            const msg = ` ${gap}+ Adding '${col}'${c.operator}'${val}'`;
-            Logger.debug(msg, `(${this.#txtCol("pass", "g")})`);
-          }
+          candidates.push(c);
         }
 
         if ("all" === type) {
-          for (const c of constraints) {
-            if (!this.#test(candidates, input, c, depth)) {
-              // Stop processing condition & DO NOT empty the parent results
-              return { stop: true, void: false };
-            }
-
-            candidates.push(c);
+          if (!this.#test(candidates, input, c, depth)) {
+            candidates = [];
+            Logger.debug(` ${gap}- Clearing all local`);
+            break;
           }
+
+          candidates.push(c);
         }
       }
+      ////////////////////////////////////////////////////////////
 
-      if ("all" == parentType) {
+      // Merge the local results with the parent results
+      ////////////////////////////////////////////////////////////
+      if (null === parentType) {
+        for (const c of candidates) this.#appendResult(parentResults, c);
+      }
+
+      if ("any" === parentType) {
         if ("any" === type) {
-          // Track if all failed
-          let allFailed = true;
-          for (const c of constraints) {
-            // Test against the parent results, if it passes, append to parent results
-            const res = parentResults.get(field) ?? [];
-            if (this.#test([...candidates, ...res], input, c, depth)) {
-              allFailed = false;
-              candidates.push(c);
-            }
-          }
-
-          // Stop processing condition & empty the results
-          if (allFailed) return { stop: true, void: true };
+          for (const c of candidates) this.#appendResult(parentResults, c);
         }
 
         if ("all" === type) {
-          for (const c of constraints) {
-            // Get parent results for the field
-            const results = parentResults.get(field) ?? [];
-
-            // Test against local and parent results, if any fail, empty parent results and return
-            if (!this.#test(candidates, input, c, depth)) {
-              Logger.debug(`${gap}X Exiting & discarding results...`);
-
-              // Stop processing condition & empty the results
-              return { stop: true, void: true };
-            }
-
-            if (!this.#test(results, input, c, depth)) {
-              Logger.debug(`${gap}X Exiting & discarding results...`);
-
-              // Stop processing condition & empty the results
-              return { stop: true, void: true };
-            }
-
-            // Append to local results
-            candidates.push(c);
+          if (!candidates.length) {
+            Logger.debug(`${gap}X Exiting...`);
+            return { values: parentResults, stop: true, void: false };
           }
+
+          for (const c of candidates) this.#appendResult(parentResults, c);
         }
       }
 
-      const existing = (parentResults.get(field) ?? []).map(
-        (r) => `${r.operator}${this.#txtCol(r.value, "m")}`
-      );
-      Logger.debug(
-        ` ${gap}> ${this.#txtCol("Merging into", "b")}: [${existing.join(
-          ", "
-        )}]`
-      );
+      if ("all" === parentType) {
+        if ("any" === type) {
+          const valid = [];
+          for (const c of candidates) {
+            const parentRes = parentResults.get(field) ?? [];
+            if (this.#test(parentRes, input, c, depth)) valid.push(c);
+          }
 
-      // Add the local results to the parent results
-      this.#sanitizeCandidates(candidates, depth).forEach((c) =>
-        this.#appendResult(parentResults, c)
-      );
+          if (!valid.length) {
+            Logger.debug(`${gap}X Exiting & Discarding results...`);
+            return { values: parentResults, stop: true, void: true };
+          }
+
+          for (const c of valid) this.#appendResult(parentResults, c);
+        }
+
+        if ("all" === type) {
+          // We assume all constraints are valid until proven otherwise, however if the list is empty
+          // we must say that no constraint has passed.
+          let allPass = candidates.length > 0;
+          for (const c of candidates) {
+            const parentRes = parentResults.get(field) ?? [];
+            if (!this.#test(parentRes, input, c, depth)) allPass = false;
+          }
+
+          if (!allPass) {
+            Logger.debug(`${gap}X Exiting & Discarding results...`);
+            return { values: parentResults, stop: true, void: true };
+          }
+
+          for (const c of candidates) {
+            this.#appendResult(parentResults, c);
+          }
+        }
+      }
+      ////////////////////////////////////////////////////////////
     }
 
     // Log the results
+    ////////////////////////////////////////////////////////////
     for (const [k, v] of parentResults.entries()) {
       const values = [];
       for (const c of v) {
@@ -510,25 +494,31 @@ export class Introspector {
       }
 
       const msg = ` ${gap}${this.#txtCol("* Results", "m")} `;
-      Logger.debug(`${msg}${this.#txtCol(k, "g")}: ${values.join(", ")}`);
+      Logger.debug(`${msg}${this.#txtCol(k, "g")}: [${values.join(", ")}]`);
     }
+    ////////////////////////////////////////////////////////////
+
+    // Sanitize the results
+    ////////////////////////////////////////////////////////////
+    for (const [field, constraints] of parentResults.entries()) {
+      parentResults.set(field, this.#sanitize(constraints, depth));
+    }
+    ////////////////////////////////////////////////////////////
 
     // Iterate over all conditions
+    ////////////////////////////////////////////////////////////
     for (const c of conditions) {
       // Introspect the condition and append the results to the parent results
       const d = depth + 1;
       const res = this.#introspectConditions(c, input, type, parentResults, d);
 
       if (res.void) parentResults = new Map();
+      else parentResults = res.values;
+
       if (res.stop)
         return { values: parentResults, stop: res.stop, void: res.void };
-
-      if (res?.values) {
-        for (const constraints of res.values.values()) {
-          constraints.forEach((c) => this.#appendResult(parentResults, c));
-        }
-      }
     }
+    //////////////////////////////////////////
 
     return { values: parentResults, stop: false, void: false };
   }
@@ -550,7 +540,11 @@ export class Introspector {
   }
 
   /**
-   * todo test this and validate
+   * Given a list of valid candidates and the input used in the introspection, this method
+   * tests a new constraint (item) returning true if the item is self consistent with the
+   * candidates and the input.
+   *
+   * Testing happens by considering each item in the list as linked by an AND
    * @param candidates The result candidates to test against.
    * @param input The constraint which was input to the introspection.
    * @param item The constraint item to test against the candidates.
@@ -565,24 +559,9 @@ export class Introspector {
     // Filter out results which do not match the field of the constraint
     candidates = candidates.filter((r) => r.field === item.field);
 
-    // Check if the input constraint matches the field of the item
-    const inputMatches = input.field === item.field;
-
     // Add the input constraint to the results (if it also matches the field)
-    if (inputMatches) candidates.push({ ...input, operator: "==" });
-
-    // Prepare the log
-    const gap = "  ".repeat(depth);
-    const col = this.#txtCol(item.field, "g");
-    const val = this.#txtCol(item.value, "y");
-    const pass = this.#txtCol("pass", "g");
-    const fail = this.#txtCol("fail", "r");
-
-    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
-
-    if (!candidates.length) {
-      Logger.debug(msg, `(${pass})`);
-      return true;
+    if (input.field === item.field) {
+      candidates.push({ ...input, operator: "==" });
     }
 
     // Test that the constraint does not breach the results
@@ -609,9 +588,12 @@ export class Introspector {
            *  L NOT IN [501, 502]
            */
 
-          // Must be equal to the value irrelevant of the operator
-          ops = ["==", ">=", "<="];
-          if (ops.includes(operator) && value !== c.value) result = false;
+          // Must be equal to the value
+          if ("==" === operator && value !== c.value) result = false;
+
+          // Item value must allow for constraint value to exist in item value range
+          if ("<=" === operator && value < c.value) result = false;
+          if (">=" === operator && value > c.value) result = false;
 
           // Item value must allow for constraint value to exist in item value range
           if ("<" === operator && value <= c.value) result = false;
@@ -671,16 +653,14 @@ export class Introspector {
            *  NOT IN [501, 502]
            */
 
+          // Always pass ["!=", ">", ">=", "not in"]
+
           // Must be bigger than the value
           ops = ["==", "<="];
           if (ops.includes(operator) && value <= c.value) result = false;
 
           if ("<" === operator && Number(value) <= Number(c.value) + 2)
             result = false;
-
-          // // Always pass
-          // ops = ["!=", ">", ">=", "not in"];
-          // if (ops.includes(operator)) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
@@ -700,16 +680,14 @@ export class Introspector {
            *  IN [499, 500]
            */
 
+          // Always pass ["!=", "<", "<=", "not in"]
+
           // Must be smaller than the value
           ops = ["==", ">="];
           if (ops.includes(operator) && value >= c.value) result = false;
 
           if (">" === operator && Number(value) >= Number(c.value) - 2)
             result = false;
-
-          // // Always pass
-          // ops = ["!=", "<", "<=", "not in"];
-          // if (ops.includes(operator)) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
@@ -729,16 +707,14 @@ export class Introspector {
            *  L IN [500, 501]
            */
 
+          // Always pass ["!=", ">=", ">", "not in"]
+
           // Must be bigger than the value
           ops = ["==", "<="];
           if (ops.includes(operator) && value < c.value) result = false;
 
           if ("<" === operator && Number(value) < Number(c.value) + 1)
             result = false;
-
-          // Always pass
-          // ops = ["!=", ">=", ">", "not in"];
-          // if ("!=" === operator) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
@@ -757,16 +733,14 @@ export class Introspector {
            *  L < any
            */
 
+          // Always pass ["!=", "<=", "<", "not in"]
+
           // Must be smaller than the value
           ops = ["==", ">="];
           if (ops.includes(operator) && value > c.value) result = false;
 
           if (">" === operator && Number(value) < Number(c.value) - 1)
             result = false;
-
-          // // Always pass
-          // ops = ["!=", "<=", "<", "not in"];
-          // if ("!=" === operator) result = true;
 
           // One of the values in the item must match the candidate value
           if ("in" === operator) {
@@ -832,8 +806,7 @@ export class Introspector {
            *  NOT IN [500, 499]
            */
 
-          // // Always pass
-          // if ("not in" === operator) result = true;
+          // Always pass ["not in"]
 
           let notInSubRes = false;
           let notInChecked = false;
@@ -879,6 +852,14 @@ export class Introspector {
       }
     }
 
+    // Prepare the log
+    const gap = "  ".repeat(depth);
+    const col = this.#txtCol(item.field, "g");
+    const val = this.#txtCol(item.value, "y");
+    const pass = this.#txtCol("pass", "g");
+    const fail = this.#txtCol("fail", "r");
+
+    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
     Logger.debug(msg, `(${result ? pass : fail})`);
 
     // Return the result
@@ -886,58 +867,110 @@ export class Introspector {
   }
 
   /**
+   * Takes a list of constraints which represent the possible values for a field which satisfy a rule
+   * and sanitizes the list to remove any constraints which are redundant. This method will convert the
+   * list of constraints to the smallest possible list of constraints which still represent the same
+   * possible values for the field.
    *
-   * @param candidates The constraints to sanitize.
+   * Sanitization happens by considering each item in the list as linked by an OR
+   * @param constraints The constraints to sanitize.
    * @param depth The current recursion depth.
    */
-  #sanitizeCandidates(candidates: Constraint[], depth: number): Constraint[] {
-    // If the list less than 2 items, we can return it as is
-    if (candidates.length < 2) return candidates;
-
-    const gap = "  ".repeat(depth);
-    const msg = ` ${gap}> ${this.#txtCol(`Sanitizing`, "b")}:`;
-
-    const values = [];
-    for (const c of candidates) {
-      values.push(`${c.operator}${this.#txtCol(c.value, "m")}`);
-    }
-
+  #sanitize(constraints: Constraint[], depth: number): Constraint[] {
     // Flag to indicate if the list has been modified
     let modified = false;
 
-    // Search for candidates with <,>,<=,>= operators
-    for (const c of candidates) {
-      if (["<", ">", "<=", ">="].includes(c.operator)) {
-        const index = candidates.indexOf(c);
-        const val = c.value;
-        const op = c.operator;
+    // Create a results list which we can modify
+    let results = JSON.parse(JSON.stringify(constraints));
 
-        for (let i = 0; i < candidates.length; i++) {
-          if (i === index) continue;
+    // Clone the constraints so that we can modify them in needed
+    for (const sub of JSON.parse(JSON.stringify(constraints))) {
+      const op = sub.operator;
+      const val = sub.value;
 
-          const item = candidates[i];
-          if (item.operator === "==") {
-            if (["<=", ">="].includes(op)) {
-              delete candidates[i];
-              modified = true;
-            }
+      // Clone the list and iterate again
+      for (const c of JSON.parse(JSON.stringify(constraints))) {
+        // If the clone and the subject are the same, skip
+        if (JSON.stringify(c) === JSON.stringify(sub)) continue;
 
-            if ("<" === op && item.value < val) {
-              delete candidates[i];
-              modified = true;
-            }
+        if (">=" === op) {
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, results);
+            modified = true;
+            break;
+          }
 
-            if (">" === op && item.value > val) {
-              delete candidates[i];
-              modified = true;
-            }
+          if (">" === c.operator) {
+            // >=500, >500+ (remove >500+)
+            if (c.value >= val) results = this.#removeItem(c, results);
+            // >=500, >499- (remove >=500)
+            if (c.value < val) results = this.#removeItem(sub, results);
+            modified = true;
+            break;
+          }
+
+          if (">=" === c.operator) {
+            // >=500, >=500+ (remove >=500+)
+            if (c.value >= val) results = this.#removeItem(c, results);
+            // >=500, >=499- (remove >=500)
+            if (c.value < val) results = this.#removeItem(sub, results);
+            modified = true;
+            break;
+          }
+        }
+
+        if ("<=" === op) {
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, results);
+            modified = true;
+            break;
+          }
+
+          if ("<" === c.operator) {
+            // <=500, <500- (remove <500-)
+            if (c.value <= val) results = this.#removeItem(c, results);
+            // <=500, <501+ (remove >=500)
+            if (c.value > val) results = this.#removeItem(sub, results);
+            modified = true;
+            break;
+          }
+
+          if ("<=" === c.operator) {
+            // <=500, <500- (remove <500-)
+            if (c.value <= val) results = this.#removeItem(c, results);
+            // <=500, <501+ (remove >=500)
+            if (c.value > val) results = this.#removeItem(sub, results);
+            modified = true;
+            break;
+          }
+        }
+
+        if (">" === op) {
+          if ("==" === c.operator && c.value > val) {
+            results = this.#removeItem(c, results);
+            modified = true;
+            break;
+          }
+        }
+
+        if ("<" === op) {
+          if ("==" === c.operator && c.value < val) {
+            results = this.#removeItem(c, results);
+            modified = true;
+            break;
           }
         }
       }
     }
 
+    const gap = "  ".repeat(depth);
+    const msg = ` ${gap}${this.#txtCol(`* Sanitized`, "b")}`;
+    const values = results.map(
+      (c: Constraint) => `${c.operator}${this.#txtCol(c.value, "m")}`
+    );
+
     !modified && Logger.debug(`${msg} [${values.join(", ")}]`);
-    return modified ? this.#sanitizeCandidates(candidates, depth) : candidates;
+    return modified ? this.#sanitize(results, depth) : results;
   }
 
   /**
@@ -992,6 +1025,17 @@ export class Introspector {
     }
 
     return this.#stripNullProps(clone);
+  }
+
+  /**
+   * Remove the provided item needle from the haystack list
+   * @param needle The item to find and remove.
+   * @param haystack The list to search in and remove from.
+   */
+  #removeItem(needle: any, haystack: any[]): any {
+    return haystack.filter(
+      (r: any) => JSON.stringify(r) !== JSON.stringify(needle)
+    );
   }
 
   /**
