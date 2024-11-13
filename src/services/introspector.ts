@@ -70,8 +70,8 @@ export class Introspector {
       conditions.push({ all: [rule.parent, rule.subRule], result });
     });
 
-    console.log("subRules", JSON.stringify(subRules));
-    console.log("conditions", JSON.stringify(conditions));
+    // console.log("subRules", JSON.stringify(subRules));
+    // console.log("conditions", JSON.stringify(conditions));
 
     // At this point the search becomes as follows: What are the possible values for the
     // subjects which will satisfy the rule if the rule is tested against the constraint provided.
@@ -101,7 +101,6 @@ export class Introspector {
       }
     }
 
-    console.log("Results", JSON.stringify(results));
     return results;
   }
 
@@ -355,7 +354,6 @@ export class Introspector {
   }
 
   /**
-   * todo test this and validate
    * Extracts all the possible combinations of criteria from the condition which are
    * self-consistent to the condition passing.
    * @param condition The condition to introspect.
@@ -392,8 +390,8 @@ export class Introspector {
     const gap = "  ".repeat(depth);
     const msg =
       0 === depth
-        ? `\nIntrospecting "${this.#txtBold(type)}" condition`
-        : `${gap}--> "${this.#txtBold(type)}" condition`;
+        ? `\nIntrospecting "${Logger.bold(type)}" condition`
+        : `${gap}--> "${Logger.bold(type)}" condition`;
     Logger.debug(msg);
 
     // Iterate over all grouped constraints
@@ -406,10 +404,10 @@ export class Introspector {
       for (const c of constraints) {
         // Append to local results
         if ("any" === type) {
-          const col = this.#txtCol(c.field, "g");
-          const val = this.#txtCol(c.value, "y");
+          const col = Logger.color(c.field, "g");
+          const val = Logger.color(c.value, "y");
           const msg = ` ${gap}+ Adding local '${col}'${c.operator}'${val}'`;
-          Logger.debug(msg, `(${this.#txtCol("pass", "g")})`);
+          Logger.debug(msg, `(${Logger.color("pass", "g")})`);
 
           candidates.push(c);
         }
@@ -490,11 +488,11 @@ export class Introspector {
     for (const [k, v] of parentResults.entries()) {
       const values = [];
       for (const c of v) {
-        values.push(`${c.operator}${this.#txtCol(c.value, "y")}`);
+        values.push(`${c.operator}${Logger.color(c.value, "y")}`);
       }
 
-      const msg = ` ${gap}${this.#txtCol("* Results", "m")} `;
-      Logger.debug(`${msg}${this.#txtCol(k, "g")}: [${values.join(", ")}]`);
+      const msg = ` ${gap}${Logger.color("* Results", "m")} `;
+      Logger.debug(`${msg}${Logger.color(k, "g")}: [${values.join(", ")}]`);
     }
     ////////////////////////////////////////////////////////////
 
@@ -541,7 +539,7 @@ export class Introspector {
 
   /**
    * Given a list of valid candidates and the input used in the introspection, this method
-   * tests a new constraint (item) returning true if the item is self consistent with the
+   * tests a new constraint (item) returning true if the item is self-consistent with the
    * candidates and the input.
    *
    * Testing happens by considering each item in the list as linked by an AND
@@ -854,10 +852,10 @@ export class Introspector {
 
     // Prepare the log
     const gap = "  ".repeat(depth);
-    const col = this.#txtCol(item.field, "g");
-    const val = this.#txtCol(item.value, "y");
-    const pass = this.#txtCol("pass", "g");
-    const fail = this.#txtCol("fail", "r");
+    const col = Logger.color(item.field, "g");
+    const val = Logger.color(item.value, "y");
+    const pass = Logger.color("pass", "g");
+    const fail = Logger.color("fail", "r");
 
     const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
     Logger.debug(msg, `(${result ? pass : fail})`);
@@ -964,36 +962,13 @@ export class Introspector {
     }
 
     const gap = "  ".repeat(depth);
-    const msg = ` ${gap}${this.#txtCol(`* Sanitized`, "b")}`;
+    const msg = ` ${gap}${Logger.color(`* Sanitized`, "b")}`;
     const values = results.map(
-      (c: Constraint) => `${c.operator}${this.#txtCol(c.value, "m")}`
+      (c: Constraint) => `${c.operator}${Logger.color(c.value, "m")}`
     );
 
     !modified && Logger.debug(`${msg} [${values.join(", ")}]`);
     return modified ? this.#sanitize(results, depth) : results;
-  }
-
-  /**
-   * Formats text with color.
-   * @param text The text to colorize.
-   * @param color The color to apply.
-   */
-  #txtCol(text: any, color: "r" | "g" | "b" | "y" | "m"): string {
-    if ("r" === color) return `\x1b[31m${text}\x1b[0m`;
-    if ("g" === color) return `\x1b[32m${text}\x1b[0m`;
-    if ("y" === color) return `\x1b[33m${text}\x1b[0m`;
-    if ("b" === color) return `\x1b[34m${text}\x1b[0m`;
-    if ("m" === color) return `\x1b[35m${text}\x1b[0m`;
-
-    return text.toString();
-  }
-
-  /**
-   * Formats text as bold.
-   * @param text The text to bold.
-   */
-  #txtBold(text: any): string {
-    return `\x1b[1m${text}\x1b[0m`;
   }
 
   /**
@@ -1032,7 +1007,7 @@ export class Introspector {
    * @param needle The item to find and remove.
    * @param haystack The list to search in and remove from.
    */
-  #removeItem(needle: any, haystack: any[]): any {
+  #removeItem<R = any>(needle: any, haystack: R[]): R[] {
     return haystack.filter(
       (r: any) => JSON.stringify(r) !== JSON.stringify(needle)
     );
