@@ -415,7 +415,7 @@ export class Introspector {
         if ("all" === type) {
           if (!this.test(candidates, input, c, depth)) {
             candidates = [];
-            Logger.debug(` ${gap}- Clearing all local`);
+            Logger.debug(` ${gap}- Clearing local candidates...`);
             break;
           }
 
@@ -454,7 +454,9 @@ export class Introspector {
           }
 
           if (!valid.length) {
-            Logger.debug(`${gap}X Exiting & Discarding results...`);
+            Logger.debug(
+              `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+            );
             return { values: parentResults, stop: true, void: true };
           }
 
@@ -471,7 +473,9 @@ export class Introspector {
           }
 
           if (!allPass) {
-            Logger.debug(`${gap}X Exiting & Discarding results...`);
+            Logger.debug(
+              `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+            );
             return { values: parentResults, stop: true, void: true };
           }
 
@@ -491,7 +495,7 @@ export class Introspector {
         values.push(`${c.operator}${Logger.color(c.value, "y")}`);
       }
 
-      const msg = ` ${gap}${Logger.color("* Results", "m")} `;
+      const msg = ` ${gap}${Logger.color("* Candidates", "m")} `;
       Logger.debug(`${msg}${Logger.color(k, "g")}: [${values.join(", ")}]`);
     }
     ////////////////////////////////////////////////////////////
@@ -877,7 +881,7 @@ export class Introspector {
 
         if (">=" === op) {
           if ("==" === c.operator && c.value === val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
 
           if (">" === c.operator) {
@@ -886,7 +890,7 @@ export class Introspector {
             // >=500, >499- (remove >=500)
             if (c.value < val) results = this.#removeItem(sub, results);
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
 
           if (">=" === c.operator) {
@@ -895,13 +899,13 @@ export class Introspector {
             // >=500, >=499- (remove >=500)
             if (c.value < val) results = this.#removeItem(sub, results);
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
         }
 
         if ("<=" === op) {
           if ("==" === c.operator && c.value === val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
 
           if ("<" === c.operator) {
@@ -910,7 +914,7 @@ export class Introspector {
             // <=500, <501+ (remove >=500)
             if (c.value > val) results = this.#removeItem(sub, results);
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
 
           if ("<=" === c.operator) {
@@ -919,41 +923,41 @@ export class Introspector {
             // <=500, <501+ (remove >=500)
             if (c.value > val) results = this.#removeItem(sub, results);
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
         }
 
         if (">" === op) {
           if ("==" === c.operator && c.value > val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
 
           if ("==" === c.operator && c.value === val) {
             results = this.#removeItem(c, this.#removeItem(sub, results));
             results.push({ ...sub, operator: ">=" });
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
 
           if (">" === c.operator && c.value >= val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
         }
 
         if ("<" === op) {
           if ("==" === c.operator && c.value < val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
 
           if ("==" === c.operator && c.value === val) {
             results = this.#removeItem(c, this.#removeItem(sub, results));
             results.push({ ...sub, operator: "<=" });
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
 
           if ("<" === c.operator && c.value <= val) {
-            return this.sanitize(this.#removeItem(c, results), depth + 1);
+            return this.sanitize(this.#removeItem(c, results), depth);
           }
         }
 
@@ -968,7 +972,7 @@ export class Introspector {
             results = this.#removeItem(c, this.#removeItem(sub, results));
             results.push({ ...sub, value: [...set].sort() });
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
         }
 
@@ -983,7 +987,7 @@ export class Introspector {
             results = this.#removeItem(c, this.#removeItem(sub, results));
             results.push({ ...sub, value: [...set].sort() });
 
-            return this.sanitize(results, depth + 1);
+            return this.sanitize(results, depth);
           }
         }
       }
@@ -994,7 +998,7 @@ export class Introspector {
           results = this.#removeItem(sub, results);
           results.push({ field: sub.field, operator: "==", value: val });
 
-          return this.sanitize(results, depth + 1);
+          return this.sanitize(results, depth);
         }
       }
 
@@ -1004,7 +1008,7 @@ export class Introspector {
           results = this.#removeItem(sub, results);
           results.push({ field: sub.field, operator: "!=", value: val });
 
-          return this.sanitize(results, depth + 1);
+          return this.sanitize(results, depth);
         }
       }
     }
@@ -1087,6 +1091,34 @@ export class Introspector {
   }
 
   /**
+   * Test Routine:
+   * We check each test item against the entire list of results.
+   * The test should be an AND format, this means that the test item AND each list item must be possible
+   *
+   * If the current type is “any” -> we just append the items
+   * If the current type is “all” -> we need to test the items against each other and all need to pass for them to be added.
+   *
+   * When merging up:
+   * If the parent type is “any”
+   *  current type “any” -> we can just append the items
+   *  current type “all” -> we can just append the items
+   * If the parent type is “all”
+   *  current type “any” -> We need to test each item against the parent set, if any passes we add it in. The ones that fail do not get added. If none pass we stop
+   *  current type “all” -> We need to test each item against the parent set, all must pass and all get added or none get added. If all do not pass we stop
+   *
+   * When to stop:
+   * If parent is null
+   *  “all” None pass STOP
+   *  “any” None pass do not stop
+   *
+   * If parent is any
+   *  “all” None pass do not stop
+   *  “any” None pass do not stop
+   *
+   * If parent is all
+   *  “all” None pass STOP
+   *  “any” None pass STOP
+   *
    * Algorithm:
    *  -> Prepare all constraints as array
    *  -> Prepare all conditions as array
