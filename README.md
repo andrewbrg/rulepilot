@@ -645,11 +645,15 @@ const introspection = RulePilot.introspect(rule, constraint, subjects);
 The following will be returned by the `introspection`:
 
 ```json
-{
-  "5": {
-    "country": [{ "value": "SE", "operator": "==" }, { "value": ["GB", "FI"], "operator": "in" }]
-  }
-}
+[{
+  "result": 5,
+  "subjects": [
+    {
+      "subject": "country",
+      "values": [{ "value": "SE", "operator": "==" }, { "value": ["GB", "FI"], "operator": "in" }]
+    }
+  ]
+}]
 ```
 
 ```typescript
@@ -661,11 +665,15 @@ const introspection = RulePilot.introspect(rule, constraint, subjects);
 The following will be returned by the `introspection`:
 
 ```json
-{
-  "5": {
-    "country": [{ "value": "SE", "operator": "==" }]
-  }
-}
+[{
+  "result": 5,
+  "subjects": [
+    {
+      "subject": "country",
+      "values": [{ "value": "SE", "operator": "==" }]
+    }
+  ]
+}]
 ```
 
 Each object in the `response` criteria which are possible inputs for the rule to evaluate to the result provided.

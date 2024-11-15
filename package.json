@@ -1,6 +1,6 @@
 {
   "name": "rulepilot",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Rule parsing engine for JSON rules",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,7 @@
     "@typescript-eslint/parser": "^5.15.0",
     "@types/jest": "^29.5.1",
     "@types/node": "^18.16.1",
-    "axios": "^1.6.0",
+    "axios": "^1.7.7",
     "eslint": "^8.55.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-plugin-perfectionist": "^2.5.0",
