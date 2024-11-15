@@ -51,15 +51,11 @@ export class Introspector {
       subRules = subRules.concat(this.#extractSubRules(condition));
     }
 
-    console.log(JSON.stringify(subRules));
-
     // We then create a new version of the rule without any of the sub-rules
     const conditions: Condition[] = [];
     for (let i = 0; i < rule.conditions.length; i++) {
       conditions.push(this.#removeAllSubRules(rule.conditions[i]));
     }
-
-    console.log(conditions);
 
     subRules.forEach((rule) => {
       if (!rule.parent) {
