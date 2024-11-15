@@ -21,11 +21,11 @@ interface ConditionResult {
 export class Introspector {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
 
-  introspect(
+  introspect<R>(
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): IntrospectionResult {
+  ): IntrospectionResult<R>[] {
     // We care about all the possible values for the subjects which will satisfy
     // the rule if the rule is tested against the constraint provided.
 
@@ -76,7 +76,7 @@ export class Introspector {
     // At this point the search becomes as follows: What are the possible values for the
     // subjects which will satisfy the rule if the rule is tested against the constraint provided.
 
-    const results = {};
+    const results: IntrospectionResult<R>[] = [];
 
     // We introspect the conditions to determine the possible values for the subjects
     for (const condition of conditions) {
@@ -84,21 +84,26 @@ export class Introspector {
       if (!values) continue;
 
       const key = condition.result ?? "default";
+      const map: Map<string, Omit<Constraint, "field">[]> = new Map();
 
       // Merge the results maintaining the uniqueness of the values
       for (const [field, constraints] of values.entries()) {
         if (!subjects.includes(field)) continue;
+        const temp = map.get(field) ?? [];
+        if (!temp.length) map.set(field, temp);
 
-        const set = new Set([...(results[field] ?? [])]);
         for (const constraint of constraints) {
-          set.add({ value: constraint.value, operator: constraint.operator });
-        }
-
-        if (set.size) {
-          results[key] = {};
-          results[key][field] = Array.from(set);
+          temp.push({ value: constraint.value, operator: constraint.operator });
         }
       }
+
+      const s = [];
+      for (const [subject, values] of map.entries()) {
+        if (!values.length) continue;
+        s.push({ subject, values });
+      }
+
+      if (s.length) results.push({ result: key, subjects: s });
     }
 
     return results;
@@ -332,7 +337,9 @@ export class Introspector {
         clone[type].splice(i, 1);
 
         // If the node is now empty, we can prune it
-        if (Array.isArray(clone[type]) && !clone[type].length) return null;
+        if (Array.isArray(clone[type]) && !clone[type].length && !clone.result)
+          return null;
+
         continue;
       }
 

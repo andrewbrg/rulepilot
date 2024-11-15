@@ -26,114 +26,195 @@ describe("RulePilot introspector correctly", () => {
   it("Introspects valid rules", async () => {
     let sub: string[] = ["Leverage"];
     let con: any = { field: "CountryIso", value: "GB" };
-    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual({
-      3: {
-        Leverage: [
-          { value: 1000, operator: ">=" },
-          { value: 200, operator: "<" },
+    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: ">=", value: 1000 },
+              { operator: "<", value: 200 },
+            ],
+          },
         ],
       },
-    });
+    ]);
 
     sub = ["Monetization"];
     con = { field: "Leverage", value: 199 };
-    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual({
-      3: { Monetization: [{ value: "Real", operator: "==" }] },
-    });
+    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Monetization",
+            values: [{ operator: "==", value: "Real" }],
+          },
+        ],
+      },
+    ]);
 
     sub = ["Monetization"];
     con = { field: "Leverage", value: 200 };
-    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid3Json, con, sub)).toEqual([]);
 
     sub = ["Leverage"];
     con = { field: "Category", value: 22 };
-    expect(RulePilot.introspect(valid4Json, con, sub)).toEqual({
-      3: {
-        Leverage: [
-          { value: 1000, operator: "==" },
-          { value: 500, operator: "==" },
-          { value: 200, operator: "<" },
+    expect(RulePilot.introspect(valid4Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: "==", value: 1000 },
+              { operator: "==", value: 500 },
+              { operator: "<", value: 200 },
+            ],
+          },
         ],
       },
-    });
+    ]);
 
     sub = ["Category"];
     con = { field: "Leverage", value: 199 };
-    expect(RulePilot.introspect(valid4Json, con, sub)).toEqual({
-      3: {
-        Category: [
-          { value: 1000, operator: ">=" },
-          { value: 22, operator: "==" },
-          { value: 11, operator: "==" },
-          { value: 12, operator: "==" },
+    expect(RulePilot.introspect(valid4Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Category",
+            values: [
+              { operator: ">=", value: 1000 },
+              { operator: "==", value: 22 },
+              { operator: "==", value: 11 },
+              { operator: "==", value: 12 },
+            ],
+          },
         ],
       },
-      4: { Category: [{ value: "Islamic", operator: "==" }] },
-    });
+      {
+        result: 4,
+        subjects: [
+          {
+            subject: "Category",
+            values: [{ operator: "==", value: "Islamic" }],
+          },
+        ],
+      },
+    ]);
 
     sub = ["IsUnder18"];
     con = { field: "Category", value: "Islamic" };
-    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual([]);
 
     sub = ["IsUnder18"];
     con = { field: "Category", value: 122 };
-    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual([]);
 
     sub = ["Monetization"];
     con = { field: "Category", value: 11 };
-    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid6Json, con, sub)).toEqual([]);
 
     sub = ["Leverage"];
     con = { field: "CountryIso", value: "DK" };
-    expect(RulePilot.introspect(valid7Json, con, sub)).toEqual({
-      3: {
-        Leverage: [
-          { value: 1000, operator: "<" },
-          { value: 200, operator: ">=" },
+    expect(RulePilot.introspect(valid7Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: "<", value: 1000 },
+              { operator: ">=", value: 200 },
+            ],
+          },
         ],
       },
-    });
+    ]);
 
     sub = ["Leverage"];
     con = { field: "CountryIso", value: "FI" };
-    expect(RulePilot.introspect(valid7Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid7Json, con, sub)).toEqual([]);
 
     sub = ["OtherType"];
     con = { field: "Leverage", value: 999 };
-    expect(RulePilot.introspect(valid8Json, con, sub)).toEqual({
-      3: { OtherType: [{ value: ["Live", "Fun"], operator: "in" }] },
-    });
+    expect(RulePilot.introspect(valid8Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "OtherType",
+            values: [{ operator: "in", value: ["Live", "Fun"] }],
+          },
+        ],
+      },
+    ]);
 
     sub = ["totalCheckoutPrice"];
     con = { field: "country", value: "SE" };
-    expect(RulePilot.introspect(valid9Json, con, sub)).toEqual({});
+    expect(RulePilot.introspect(valid9Json, con, sub)).toEqual([]);
 
     sub = ["Leverage", "Monetization"];
     con = { field: "Category", value: 22 };
-    expect(RulePilot.introspect(subRulesValid2Json, con, sub)).toEqual({
-      "3": {
-        Leverage: [
-          { value: 1000, operator: "==" },
-          { value: 500, operator: "==" },
-          { value: "Demo", operator: "==" },
+    expect(RulePilot.introspect(subRulesValid2Json, con, sub)).toEqual([
+      {
+        result: 3,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: "==", value: 1000 },
+              { operator: "==", value: 500 },
+              { operator: "==", value: "Demo" },
+            ],
+          },
         ],
       },
-      "12": { Monetization: [{ value: "Real", operator: "==" }] },
-      "13": {
-        Leverage: [
-          { value: 1000, operator: "==" },
-          { value: 500, operator: "==" },
-          { value: "Demo", operator: "==" },
+      {
+        result: 15,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: "==", value: 1000 },
+              { operator: "==", value: 500 },
+              { operator: "==", value: "Demo" },
+            ],
+          },
         ],
       },
-      "15": {
-        Leverage: [
-          { value: 1000, operator: "==" },
-          { value: 500, operator: "==" },
-          { value: "Demo", operator: "==" },
+      {
+        result: 12,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: ">", value: 400 },
+              { operator: "==", value: "Demo" },
+            ],
+          },
+          {
+            subject: "Monetization",
+            values: [{ operator: "==", value: "Real" }],
+          },
         ],
       },
-    });
+      {
+        result: 13,
+        subjects: [
+          {
+            subject: "Leverage",
+            values: [
+              { operator: "==", value: 1000 },
+              { operator: "==", value: 500 },
+              { operator: "==", value: "Demo" },
+            ],
+          },
+        ],
+      },
+    ]);
   });
 
   it("Sanitizes results correctly", async () => {

@@ -1,5 +1,11 @@
 import { Constraint } from "./rule";
 
-export interface IntrospectionResult {
-  [key: string]: Omit<Constraint, "field">[];
-}
+type IntrospectionResultSubject = {
+  subject: string;
+  values: Omit<Constraint, "field">[];
+};
+
+export type IntrospectionResult<R> = {
+  result: R;
+  subjects: IntrospectionResultSubject[];
+};

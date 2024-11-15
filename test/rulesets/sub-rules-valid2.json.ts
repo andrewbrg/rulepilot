@@ -1,9 +1,5 @@
 import { Rule } from "../../src";
 
-// Test against Category 900
-// -> Leverage 1000, 500
-// -> Monetization Demo
-
 export const subRulesValid2Json: Rule = {
   conditions: [
     {

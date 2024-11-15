@@ -12,6 +12,8 @@ export class ObjectDiscovery {
    * @param condition The condition to check.
    */
   conditionType(condition: Condition): ConditionType | null {
+    if (!this.isObject(condition)) return null;
+
     if ("any" in condition) return "any";
     if ("all" in condition) return "all";
     if ("none" in condition) return "none";

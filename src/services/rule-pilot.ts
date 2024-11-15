@@ -98,18 +98,18 @@ export class RulePilot {
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  introspect(
+  introspect<R = string>(
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): IntrospectionResult {
+  ): IntrospectionResult<R>[] {
     // Before we proceed with the rule, we should validate it.
     const validationResult = this.validate(rule);
     if (!validationResult.isValid) {
       throw new RuleError(validationResult);
     }
 
-    return this.#introspector.introspect(rule, constraint, subjects);
+    return this.#introspector.introspect<R>(rule, constraint, subjects);
   }
 
   /**
@@ -162,12 +162,12 @@ export class RulePilot {
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  static introspect(
+  static introspect<R = string>(
     rule: Rule,
     constraint: Omit<Constraint, "operator">,
     subjects: string[]
-  ): IntrospectionResult {
-    return RulePilot.#rulePilot.introspect(rule, constraint, subjects);
+  ): IntrospectionResult<R>[] {
+    return RulePilot.#rulePilot.introspect<R>(rule, constraint, subjects);
   }
 
   /**
