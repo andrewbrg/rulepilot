@@ -5,6 +5,7 @@ import { valid7Json } from "./rulesets/valid7.json";
 import { valid8Json } from "./rulesets/valid8.json";
 import { valid9Json } from "./rulesets/valid9.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
+import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
 import { Introspector } from "../src/services";
 import { RuleError, RulePilot, Constraint } from "../src";
@@ -98,7 +99,7 @@ describe("RulePilot introspector correctly", () => {
     expect(RulePilot.introspect(valid7Json, con, sub)).toEqual({});
 
     sub = ["OtherType"];
-    con = { field: "Lev", value: 999 };
+    con = { field: "Leverage", value: 999 };
     expect(RulePilot.introspect(valid8Json, con, sub)).toEqual({
       3: { OtherType: [{ value: ["Live", "Fun"], operator: "in" }] },
     });
@@ -106,6 +107,33 @@ describe("RulePilot introspector correctly", () => {
     sub = ["totalCheckoutPrice"];
     con = { field: "country", value: "SE" };
     expect(RulePilot.introspect(valid9Json, con, sub)).toEqual({});
+
+    sub = ["Leverage", "Monetization"];
+    con = { field: "Category", value: 22 };
+    expect(RulePilot.introspect(subRulesValid2Json, con, sub)).toEqual({
+      "3": {
+        Leverage: [
+          { value: 1000, operator: "==" },
+          { value: 500, operator: "==" },
+          { value: "Demo", operator: "==" },
+        ],
+      },
+      "12": { Monetization: [{ value: "Real", operator: "==" }] },
+      "13": {
+        Leverage: [
+          { value: 1000, operator: "==" },
+          { value: 500, operator: "==" },
+          { value: "Demo", operator: "==" },
+        ],
+      },
+      "15": {
+        Leverage: [
+          { value: 1000, operator: "==" },
+          { value: 500, operator: "==" },
+          { value: "Demo", operator: "==" },
+        ],
+      },
+    });
   });
 
   it("Sanitizes results correctly", async () => {
@@ -352,6 +380,24 @@ describe("RulePilot introspector correctly", () => {
     item = { field: "Lev", value: 20, operator: "!=" };
     expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
 
+    item = { field: "Lev", value: [55, 65, 75], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
+
+    item = { field: "Lev", value: [10, 65, 75], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [55, 65, 75], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 65, 75], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 20, 75], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 20, 30], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
+
     //
 
     item = { field: "Lev", value: 30, operator: ">" };
@@ -398,6 +444,21 @@ describe("RulePilot introspector correctly", () => {
 
     item = { field: "Lev", value: 20, operator: "!=" };
     expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [55, 65, 75], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10], operator: "not in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 65, 75], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 20, 75], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+
+    item = { field: "Lev", value: [10, 20, 30], operator: "in" };
+    expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(false);
 
     //
 

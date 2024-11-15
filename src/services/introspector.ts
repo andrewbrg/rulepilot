@@ -394,10 +394,16 @@ export class Introspector {
         : `${gap}--> "${Logger.bold(type)}" condition`;
     Logger.debug(msg);
 
+    // Prepare the local results
+    let clearLocal = false;
+    let results: Map<string, Constraint[]> = new Map();
+
     // Iterate over all grouped constraints
     for (const [field, constraints] of groupedConst.entries()) {
-      // Prepare the local results
-      let candidates: Constraint[] = [];
+      // Prepare the candidates for this field type
+      let candidates = results.get(field) ?? [];
+
+      if (clearLocal) continue;
 
       // Test the constraints and prepare the local results
       ////////////////////////////////////////////////////////////
@@ -415,27 +421,45 @@ export class Introspector {
         if ("all" === type) {
           if (!this.test(candidates, input, c, depth)) {
             candidates = [];
+            clearLocal = true;
             Logger.debug(` ${gap}- Clearing local candidates...`);
             break;
           }
 
+          const col = Logger.color(c.field, "g");
+          const val = Logger.color(c.value, "y");
+          const msg = ` ${gap}+ Adding local '${col}'${c.operator}'${val}'`;
+          Logger.debug(msg, `(${Logger.color("pass", "g")})`);
+
           candidates.push(c);
         }
       }
-      ////////////////////////////////////////////////////////////
 
-      // Merge the local results with the parent results
-      ////////////////////////////////////////////////////////////
-      if (null === parentType) {
+      // Store the updated candidates into the local results
+      results.set(field, candidates);
+    }
+
+    if (clearLocal) results = new Map();
+
+    ////////////////////////////////////////////////////////////
+
+    // Merge the local results with the parent results
+    ////////////////////////////////////////////////////////////
+    if (null === parentType) {
+      for (const [_, candidates] of results.entries()) {
         for (const c of candidates) this.#appendResult(parentResults, c);
       }
+    }
 
-      if ("any" === parentType) {
-        if ("any" === type) {
+    if ("any" === parentType) {
+      if ("any" === type) {
+        for (const [_, candidates] of results.entries()) {
           for (const c of candidates) this.#appendResult(parentResults, c);
         }
+      }
 
-        if ("all" === type) {
+      if ("all" === type) {
+        for (const [_, candidates] of results.entries()) {
           if (!candidates.length) {
             Logger.debug(`${gap}X Exiting...`);
             return { values: parentResults, stop: true, void: false };
@@ -444,48 +468,55 @@ export class Introspector {
           for (const c of candidates) this.#appendResult(parentResults, c);
         }
       }
+    }
 
-      if ("all" === parentType) {
-        if ("any" === type) {
-          const valid = [];
+    if ("all" === parentType) {
+      if ("any" === type) {
+        const valid = [];
+        for (const [field, candidates] of results.entries()) {
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
             if (this.test(parentRes, input, c, depth)) valid.push(c);
           }
-
-          if (!valid.length) {
-            Logger.debug(
-              `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
-            );
-            return { values: parentResults, stop: true, void: true };
-          }
-
-          for (const c of valid) this.#appendResult(parentResults, c);
         }
 
-        if ("all" === type) {
-          // We assume all constraints are valid until proven otherwise, however if the list is empty
-          // we must say that no constraint has passed.
-          let allPass = candidates.length > 0;
+        if (!valid.length) {
+          Logger.debug(
+            `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+          );
+          return { values: parentResults, stop: true, void: true };
+        }
+
+        for (const c of valid) this.#appendResult(parentResults, c);
+      }
+
+      if ("all" === type) {
+        // We assume all constraints are valid until proven otherwise,
+        // However if the list is empty we must say that no constraint has passed.
+        let allPass = Array.from(results.values()).flat().length > 0;
+
+        for (const [field, candidates] of results.entries()) {
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
             if (!this.test(parentRes, input, c, depth)) allPass = false;
           }
+        }
 
-          if (!allPass) {
-            Logger.debug(
-              `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
-            );
-            return { values: parentResults, stop: true, void: true };
-          }
+        if (!allPass) {
+          Logger.debug(
+            `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+          );
+          return { values: parentResults, stop: true, void: true };
+        }
 
+        for (const [_, candidates] of results.entries()) {
           for (const c of candidates) {
             this.#appendResult(parentResults, c);
           }
         }
       }
-      ////////////////////////////////////////////////////////////
     }
+    ////////////////////////////////////////////////////////////
 
     // Log the results
     ////////////////////////////////////////////////////////////
@@ -822,6 +853,7 @@ export class Introspector {
 
           // One of the values in the item must NOT match any candidate values
           if ("in" === operator) {
+            result = false;
             if (this.#asArray(value).some((val) => !notInValues.includes(val)))
               result = true;
           }
