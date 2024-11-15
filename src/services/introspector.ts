@@ -51,11 +51,15 @@ export class Introspector {
       subRules = subRules.concat(this.#extractSubRules(condition));
     }
 
+    console.log(JSON.stringify(subRules));
+
     // We then create a new version of the rule without any of the sub-rules
     const conditions: Condition[] = [];
     for (let i = 0; i < rule.conditions.length; i++) {
       conditions.push(this.#removeAllSubRules(rule.conditions[i]));
     }
+
+    console.log(conditions);
 
     subRules.forEach((rule) => {
       if (!rule.parent) {
@@ -340,7 +344,8 @@ export class Introspector {
         if (Array.isArray(clone[type]) && !clone[type].length && !clone.result)
           return null;
 
-        continue;
+        // Recurse to re-process updated clone
+        return this.#removeAllSubRules(clone);
       }
 
       // If the node is a condition, recurse
@@ -860,9 +865,9 @@ export class Introspector {
 
           // One of the values in the item must NOT match any candidate values
           if ("in" === operator) {
-            result = false;
-            if (this.#asArray(value).some((val) => !notInValues.includes(val)))
-              result = true;
+            result = this.#asArray(value).some(
+              (val) => !notInValues.includes(val)
+            );
           }
           break;
         // case "contains":
