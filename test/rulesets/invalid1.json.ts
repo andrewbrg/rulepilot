@@ -1,4 +1,4 @@
-import { Rule } from "../../src";
+import { Rule, Condition } from "../../src";
 
 export const invalid1Json: Rule = {
   conditions: [
@@ -21,9 +21,10 @@ export const invalid1Json: Rule = {
               operator: "==",
               value: "Real",
             },
+            {
+              foo: "bar",
+            } as Condition,
           ],
-          // Result property is only allowed on the top level conditions
-          result: "This is invalid!!!!!!!",
         },
         {
           all: [

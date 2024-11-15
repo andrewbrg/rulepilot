@@ -32,7 +32,7 @@ module.exports = {
           },
         },
         "newlines-between": "always",
-        "max-line-length": 80,
+        "max-line-length": 140,
       },
     ],
     "perfectionist/sort-named-imports": [

@@ -3,8 +3,8 @@ import { Builder } from "../builder";
 import { RuleError } from "../errors";
 import { Evaluator } from "./evaluator";
 import { Introspector } from "./introspector";
-import { Rule, IntrospectionResult } from "../types";
 import { Validator, ValidationResult } from "./validator";
+import { Rule, Constraint, IntrospectionResult } from "../types";
 
 export class RulePilot {
   static #rulePilot = new RulePilot();
@@ -93,17 +93,23 @@ export class RulePilot {
    * the possible range of input criteria which would be satisfied by the rule.
    *
    * @param rule The rule to evaluate.
+   * @param constraint The constraint to introspect against.
+   * @param subjects The subjects to introspect for.
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  introspect<T>(rule: Rule): IntrospectionResult<T> {
+  introspect(
+    rule: Rule,
+    constraint: Omit<Constraint, "operator">,
+    subjects: string[]
+  ): IntrospectionResult {
     // Before we proceed with the rule, we should validate it.
     const validationResult = this.validate(rule);
     if (!validationResult.isValid) {
       throw new RuleError(validationResult);
     }
 
-    return this.#introspector.introspect<T>(rule);
+    return this.#introspector.introspect(rule, constraint, subjects);
   }
 
   /**
@@ -151,11 +157,17 @@ export class RulePilot {
    * the possible range of input criteria which would be satisfied by the rule.
    *
    * @param rule The rule to introspect.
+   * @param constraint The constraint to introspect against.
+   * @param subjects The subjects to introspect for.
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
-  static introspect<T>(rule: Rule): IntrospectionResult<T> {
-    return RulePilot.#rulePilot.introspect<T>(rule);
+  static introspect(
+    rule: Rule,
+    constraint: Omit<Constraint, "operator">,
+    subjects: string[]
+  ): IntrospectionResult {
+    return RulePilot.#rulePilot.introspect(rule, constraint, subjects);
   }
 
   /**

@@ -1,27 +1,16 @@
-import {
-  Rule,
-  SubRule,
-  Condition,
-  Constraint,
-  CriteriaRange,
-  ConditionType,
-  IntrospectionResult,
-} from "../types";
 import { Logger } from "./logger";
-import { RuleTypeError } from "../errors";
 import { ObjectDiscovery } from "./object-discovery";
-
-interface IntrospectionStep {
-  parentType?: ConditionType;
-  currType: ConditionType;
-  depth: number;
-  option: Record<string, unknown>;
-  changes?: { key: string; value: unknown }[];
-}
+import { Rule, Condition, Constraint, IntrospectionResult } from "../types";
 
 interface SubRuleResult {
-  parent: Condition;
-  subRule: SubRule;
+  parent?: Condition;
+  subRule: Condition;
+}
+
+interface ConditionResult {
+  values?: Map<string, Constraint[]>;
+  stop: boolean;
+  void: boolean;
 }
 
 /**
@@ -31,131 +20,84 @@ interface SubRuleResult {
  */
 export class Introspector {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();
-  #steps: IntrospectionStep[];
 
-  /**
-   * Given a rule, checks the constraints and conditions to determine
-   * the possible range of input criteria which would be satisfied by the rule.
-   * The rule must be a granular rule to be introspected.
-   * @param rule The rule to evaluate.
-   * @throws RuleTypeError if the rule is not granular
-   */
-  introspect<R>(rule: Rule): IntrospectionResult<R> {
-    // The ruleset needs to be granular for this operation to work
-    if (!this.#objectDiscovery.isGranular(rule)) {
-      throw new RuleTypeError("Introspection requires granular rules.");
-    }
+  introspect(
+    rule: Rule,
+    constraint: Omit<Constraint, "operator">,
+    subjects: string[]
+  ): IntrospectionResult {
+    // We care about all the possible values for the subjects which will satisfy
+    // the rule if the rule is tested against the constraint provided.
 
-    // Find any conditions which contain sub-rules
-    let subRuleResults: SubRuleResult[] = [];
-    for (const condition of this.#asArray(rule.conditions)) {
-      subRuleResults = subRuleResults.concat(
-        this.#findSubRules(condition, condition)
+    // To proceed we must first clone the rule (to avoid modifying the original)
+    rule = JSON.parse(JSON.stringify(rule));
+
+    // First step is to simplify the rule:
+    // 1. Make sure the rule conditions is an array.
+    // 2. Convert any 'none' conditions to an 'all' and reverse operators of all children till the bottom.
+    // 3. Remove all constraints which are not relevant to the subjects provided.
+    rule.conditions = this.#asArray(rule.conditions);
+    for (let i = 0; i < rule.conditions.length; i++) {
+      rule.conditions[i] = this.#reverseNoneToAll(rule.conditions[i]);
+      rule.conditions[i] = this.#removeIrrelevantConstraints(
+        rule.conditions[i],
+        [...subjects, constraint.field]
       );
     }
 
-    let results = this.#introspectRule<R>(rule);
+    // We then need to extract all sub-rules from the main rule
+    let subRules: SubRuleResult[] = [];
+    for (const condition of rule.conditions) {
+      subRules = subRules.concat(this.#extractSubRules(condition));
+    }
 
-    // Construct a new rule from each sub-rule result
-    for (const subRuleResult of subRuleResults) {
-      const res = this.#flatten(subRuleResult.parent);
-      for (const condition of this.#asArray(subRuleResult.subRule.conditions)) {
-        res.all.push(condition);
+    // We then create a new version of the rule without any of the sub-rules
+    const conditions: Condition[] = [];
+    for (let i = 0; i < rule.conditions.length; i++) {
+      conditions.push(this.#removeAllSubRules(rule.conditions[i]));
+    }
+
+    subRules.forEach((rule) => {
+      if (!rule.parent) {
+        conditions.push(rule.subRule);
+        return;
       }
 
-      // console.log(
-      //   `Rule ${subRuleResult.subRule.result}:`,
-      //   JSON.stringify({
-      //     conditions: {
-      //       ...res,
-      //       result: subRuleResult.subRule.result,
-      //     },
-      //   })
-      // );
+      const result = rule.subRule.result;
+      delete rule.parent.result;
+      delete rule.subRule.result;
 
-      results = results.concat(
-        this.#introspectRule<R>({
-          conditions: {
-            ...res,
-            result: subRuleResult.subRule.result,
-          },
-        })
-      );
-    }
+      conditions.push({ all: [rule.parent, rule.subRule], result });
+    });
 
-    return {
-      results,
-      ...("default" in rule && undefined !== rule.default
-        ? { default: rule.default }
-        : {}),
-    };
-  }
+    // console.log("subRules", JSON.stringify(subRules));
+    // console.log("conditions", JSON.stringify(conditions));
 
-  /**
-   * Runs the introspection process on a rule to determine the possible range of input criteria
-   * @param rule The rule to introspect.
-   */
-  #introspectRule<R>(rule: Rule): CriteriaRange<R>[] {
-    // Initialize a clean steps array each time we introspect
-    this.#steps = [];
-    const conditions = this.#asArray(rule.conditions);
+    // At this point the search becomes as follows: What are the possible values for the
+    // subjects which will satisfy the rule if the rule is tested against the constraint provided.
 
-    // Then we map each result to the condition that produces
-    // it to create a map of results to conditions
-    const conditionMap = new Map<R, Condition[]>();
+    const results = {};
+
+    // We introspect the conditions to determine the possible values for the subjects
     for (const condition of conditions) {
-      const data = conditionMap.get(condition.result) ?? [];
-      if (!data.length) conditionMap.set(condition.result, data);
+      const { values } = this.#introspectConditions(condition, constraint);
+      if (!values) continue;
 
-      data.push(condition);
-    }
+      const key = condition.result ?? "default";
 
-    // Using this information we can build the skeleton of the introspected criteria range
-    const criteriaRange: CriteriaRange<R>[] = [];
-    for (const result of conditionMap.keys()) {
-      criteriaRange.push({ result, options: [] });
-    }
+      // Merge the results maintaining the uniqueness of the values
+      for (const [field, constraints] of values.entries()) {
+        if (!subjects.includes(field)) continue;
 
-    // We need to populate each item in the `criteriaRange` with
-    // the possible range of input values (in the criteria) which
-    // would resolve to the given result. Rules are recursive.
-    return this.#resolveCriteriaRanges(criteriaRange, conditionMap);
-  }
-
-  /**
-   * Recursively finds all sub-rules in a condition.
-   * @param condition The condition to search.
-   * @param root The root condition which holds the condition to search.
-   * @param results The results array to populate.
-   */
-  #findSubRules(
-    condition: Condition,
-    root: Condition,
-    results: SubRuleResult[] = []
-  ): SubRuleResult[] {
-    // Find the type of the condition
-    const type = this.#objectDiscovery.conditionType(condition);
-
-    // Iterate each node in the condition
-    for (const node of condition[type]) {
-      if (this.#objectDiscovery.isSubRule(node)) {
-        results.push({
-          parent: this.#removeSubRule(node.rule, root),
-          subRule: {
-            conditions: this.#stripAllSubRules(node.rule.conditions),
-            result: node.rule.result,
-          },
-        });
-
-        // Recursively find sub-rules within the sub-rule
-        for (const condition of this.#asArray(node.rule.conditions)) {
-          results = this.#findSubRules(condition, root, results);
+        const set = new Set([...(results[field] ?? [])]);
+        for (const constraint of constraints) {
+          set.add({ value: constraint.value, operator: constraint.operator });
         }
-      }
 
-      // Recursively find sub-rules within the condition
-      if (this.#objectDiscovery.isCondition(node)) {
-        results = this.#findSubRules(node, root, results);
+        if (set.size) {
+          results[key] = {};
+          results[key][field] = Array.from(set);
+        }
       }
     }
 
@@ -163,527 +105,244 @@ export class Introspector {
   }
 
   /**
-   * Remove the provided sub-rule needle from the haystack condition
-   * @param needle The sub-rule to remove.
-   * @param haystack The condition to search in and remove the sub-rule from.
+   * Reverses all 'none' conditions to 'all' and flips the operators of all children.
+   * @param condition The condition to reverse.
+   * @param shouldFlip A flag to indicate if the operators should be flipped.
    */
-  #removeSubRule(needle: SubRule, haystack: Condition): Condition {
-    // Clone the root condition so that we can modify it
-    const clone = JSON.parse(JSON.stringify(haystack));
-
-    // Find the type of the condition
-    const type = this.#objectDiscovery.conditionType(clone);
-
-    // Iterate over each node in the condition
-    for (let i = 0; i < clone[type].length; i++) {
-      const node = clone[type][i];
-
-      // If the node is a condition, recurse
-      if (this.#objectDiscovery.isCondition(node)) {
-        clone[type][i] = this.#removeSubRule(needle, node);
-        continue;
-      }
-
-      // If the node is a sub-rule
-      if (this.#objectDiscovery.isSubRule(node)) {
-        if (!this.existsIn(needle, node.rule.conditions)) {
-          clone[type].splice(i, 1);
-          continue;
-        }
-
-        // Otherwise, recurse into the sub-rule
-        const conditions = this.#asArray(node.rule.conditions);
-        for (let j = 0; j < conditions.length; j++) {
-          clone[type][i].rule.conditions[j] = this.#removeSubRule(
-            needle,
-            conditions[j]
-          );
-        }
-      }
-    }
-
-    return clone;
-  }
-
-  /**
-   * Checks if a sub-rule exists in a given haystack.
-   * @param needle The sub-rule to search for.
-   * @param haystack The condition to search in.
-   * @param found A flag to indicate if the sub-rule has been found.
-   */
-  existsIn(
-    needle: SubRule,
-    haystack: unknown,
-    found: boolean = false
-  ): boolean {
-    if (found) return true;
-
-    // Otherwise, recurse into the sub-rule
-    for (const node of this.#asArray(haystack)) {
-      // If the node is a sub-rule
-      if (this.#objectDiscovery.isSubRule(node)) {
-        // Check if it is the sub-rule we are looking for
-        if (JSON.stringify(needle) === JSON.stringify(node.rule)) return true;
-        // Otherwise, recurse into the sub-rule
-        found = this.existsIn(needle, node.rule.conditions, found);
-      }
-
-      // If the node is a condition, recurse
-      if (this.#objectDiscovery.isCondition(node)) {
-        const type = this.#objectDiscovery.conditionType(node);
-        found = this.existsIn(needle, node[type], found);
-      }
-    }
-
-    return found;
-  }
-
-  /**
-   * Removes all sub-rules from a condition or array of conditions.
-   * @param conditions The conditions to remove sub-rules from.
-   */
-  #stripAllSubRules<R = Condition | Condition[]>(conditions: R): R | undefined {
-    // Clone the conditions array so that we can modify it
-    const clone = JSON.parse(JSON.stringify(this.#asArray(conditions)));
-
-    // Iterate over each condition in the array
-    for (let i = 0; i < clone.length; i++) {
-      // Find the type of the condition
-      const type = this.#objectDiscovery.conditionType(clone[i]);
-
-      // Iterate over each node in the condition
-      for (let j = 0; j < clone[i][type].length; j++) {
-        const node = clone[i][type][j];
-
-        // If the node is a condition, recurse
-        if (this.#objectDiscovery.isCondition(node)) {
-          const res = this.#stripAllSubRules<Condition>(node);
-          if (res) clone[i][type][j] = res;
-          else clone[i][type].splice(j, 1);
-        }
-
-        // If the node is a sub-rule, remove it
-        if (this.#objectDiscovery.isSubRule(node)) clone[i][type].splice(j, 1);
-      }
-    }
-
-    return Array.isArray(conditions) ? (clone as R) : (clone[0] as R);
-  }
-
-  /**
-   * Flattens a condition or set of conditions into a single object.
-   * @param conditions The conditions to flatten.
-   * @param result The result object to populate.
-   */
-  #flatten(
-    conditions: Condition | Condition[],
-    result: Condition = { all: [] }
-  ): Condition {
-    // Clone the conditions array so that we can modify it
-    const clone = JSON.parse(JSON.stringify(this.#asArray(conditions)));
-
-    for (const condition of clone) {
-      const items = [];
-
-      const type = this.#objectDiscovery.conditionType(condition);
-      for (const node of condition[type]) {
-        if (this.#objectDiscovery.isSubRule(node)) {
-          result = this.#flatten(node.rule.conditions, result);
-          continue;
-        }
-
-        items.push(node);
-      }
-
-      result.all.push({ [type]: items });
-    }
-
-    return result;
-  }
-
-  /**
-   * Populates the criteria range options with the possible range of input values
-   * @param criteriaRanges The criteria range to populate.
-   * @param conditionMap The map of results to conditions.
-   * @param parentType The type of the parent condition.
-   * @param depth The current recursion depth.
-   */
-  #resolveCriteriaRanges<R>(
-    criteriaRanges: CriteriaRange<R>[],
-    conditionMap: Map<R, Condition[]>,
-    parentType: ConditionType = null,
-    depth: number = 0
-  ): CriteriaRange<R>[] {
-    // For each set of conditions which produce the same result
-    for (const [result, conditions] of conditionMap) {
-      // For each condition in that set
-      for (const condition of conditions) {
-        const type = this.#objectDiscovery.conditionType(condition);
-        if (!type) continue;
-
-        Logger.debug(`\nIntrospector: Introspecting result "${result}"`);
-
-        // Find the criteria range object for the result
-        let criteriaRangeItem = criteriaRanges.find((c) => c.result == result);
-        criteriaRangeItem = this.#populateCriteriaRangeOptions<R>(
-          criteriaRangeItem,
-          condition,
-          depth,
-          parentType
-        );
-
-        // Iterate over each property of the condition
-        for (const node of condition[type]) {
-          if (this.#objectDiscovery.isCondition(node)) {
-            const condition = node as Condition;
-            criteriaRangeItem = this.#resolveCriteriaRanges<R>(
-              [criteriaRangeItem],
-              new Map<R, Condition[]>([[result, [condition]]]),
-              type,
-              depth + 1
-            ).pop();
-          }
-
-          // Update the original set of criteria range objects
-          // with the updated criteria range object
-          const index = criteriaRanges.findIndex((c) => c.result == result);
-          criteriaRanges[index] = criteriaRangeItem;
-        }
-      }
-    }
-
-    return criteriaRanges;
-  }
-
-  /**
-   * Updates a criteria range entry based on the constraint and condition type.
-   * @param criteriaRange The criteria range entry to update.
-   * @param condition The condition to update the criteria range entry with.
-   * @param depth The current recursion depth.
-   * @param parentType The type of the parent condition.
-   */
-  #populateCriteriaRangeOptions<R>(
-    criteriaRange: CriteriaRange<R>,
+  #reverseNoneToAll(
     condition: Condition,
-    depth: number,
-    parentType?: ConditionType
-  ): CriteriaRange<R> {
+    shouldFlip: boolean = false
+  ): Condition {
     const type = this.#objectDiscovery.conditionType(condition);
-    const options = new Map<string, Record<string, unknown>>();
+    if ("none" === type) shouldFlip = !shouldFlip;
 
-    for (const node of condition[type]) {
-      if (!this.#objectDiscovery.isConstraint(node)) {
-        continue;
+    // Iterate each node in the condition
+    for (let i = 0; i < condition[type].length; i++) {
+      let node = condition[type][i];
+
+      // If the node is a condition, check if we need to reverse it
+      if (shouldFlip && this.#objectDiscovery.isConstraint(node)) {
+        node = this.#flipConstraintOperator(node as Constraint);
       }
 
-      const constraint = node as Constraint;
-
-      Logger.debug(
-        `Introspector: Processing "${constraint.field} (${constraint.operator})" in "${type}" condition`
-      );
-
-      // Check if we already have an entry with the same field
-      // and if so, update it instead of creating a new one
-      let option = options.get(constraint.field) ?? {};
-      option = this.#updateCriteriaRangeOptions(option, constraint, type);
-      options.set(constraint.field, option);
-    }
-
-    if (["any", "none"].includes(type)) {
-      Array.from(options.values()).forEach((option) => {
-        criteriaRange = this.#addOptionToCriteriaRange<R>(
-          type,
-          parentType,
-          criteriaRange,
-          option,
-          depth
-        );
-
-        // Debug the last introspection
-        Logger.debug("Introspector: Step complete", this.lastStep);
-      });
-    }
-
-    if ("all" === type) {
-      criteriaRange = this.#addOptionToCriteriaRange<R>(
-        type,
-        parentType,
-        criteriaRange,
-        Array.from(options.values()).reduce((prev, curr) => {
-          for (const [key, value] of Object.entries(curr)) {
-            prev[key] = prev.hasOwnProperty(key)
-              ? [...new Set([prev[key], value].flat())]
-              : value;
-          }
-
-          return prev;
-        }, {}),
-        depth
-      );
-
-      // Debug the last introspection
-      Logger.debug("Introspector: Step complete", this.lastStep);
-    }
-
-    return criteriaRange;
-  }
-
-  /**
-   * Updates a criteria range option based on the constraint and condition type.
-   * @param option The option to update.
-   * @param constraint The constraint to update the option with.
-   * @param type The current condition type.
-   */
-  #updateCriteriaRangeOptions(
-    option: Record<string, unknown>,
-    constraint: Constraint,
-    type: ConditionType
-  ): Record<string, unknown> {
-    // We need to clone the constraint because we will be modifying it
-    const c = { ...constraint };
-
-    // We can consider a 'None' as a not 'All' and flip all the operators
-    // To be done on any 'None' type condition or on any child
-    // of a 'None' type condition.
-    if (type === "none" || this.#isCurrentStepChildOf("none")) {
-      switch (c.operator) {
-        case "==":
-          c.operator = "!=";
-          break;
-        case "!=":
-          c.operator = "==";
-          break;
-        case ">":
-          c.operator = "<=";
-          break;
-        case "<":
-          c.operator = ">=";
-          break;
-        case ">=":
-          c.operator = "<";
-          break;
-        case "<=":
-          c.operator = ">";
-          break;
-        case "in":
-          c.operator = "not in";
-          break;
-        case "not in":
-          c.operator = "in";
-          break;
-        case "contains":
-          c.operator = "not contains";
-          break;
-        case "not contains":
-          c.operator = "contains";
-          break;
-        case "contains any":
-          c.operator = "not contains any";
-          break;
-        case "not contains any":
-          c.operator = "contains any";
-          break;
-        case "matches":
-          c.operator = "not matches";
-          break;
-        case "not matches":
-          c.operator = "matches";
-          break;
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        node = this.#reverseNoneToAll(node as Condition, shouldFlip);
       }
     }
 
-    if (!option.hasOwnProperty(c.field)) {
-      // When condition is an all, we need to create a new object in the criteria range
-      // options and add all the possible inputs which would satisfy the condition.
-      if (type === "all" || type === "none") {
-        switch (c.operator) {
-          case "==":
-          case "in":
-            option[c.field] = c.value;
-            break;
-          default:
-            option[c.field] = {
-              operator: c.operator,
-              value: c.value,
-            };
-            break;
-        }
-
-        return option;
+    if (shouldFlip) {
+      if ("none" === type) {
+        condition["all"] = condition[type];
+        delete condition[type];
       }
 
-      // When condition is an any, we need to create a new object in the criteria range
-      // options for each criterion in the condition and add all the possible inputs
-      // which would satisfy the criterion.
       if ("any" === type) {
-        switch (c.operator) {
-          case "==":
-          case "in":
-            return { [c.field]: c.value };
-          default:
-            return {
-              [c.field]: {
-                operator: c.operator,
-                value: c.value,
-              },
-            };
-        }
+        condition["all"] = condition[type];
+        delete condition[type];
       }
     }
 
-    let value = c.value;
-    if (c.operator !== "==") {
-      value = { operator: c.operator, value: c.value };
-    }
-
-    option[c.field] = [...new Set([option[c.field], value].flat())];
-
-    return option;
+    return this.#stripNullProps(condition);
   }
 
   /**
-   * Adds an option to a criteria range entry based on the condition type and parent type.
-   * @param currType The current condition type.
-   * @param parentType The type of the parent condition.
-   * @param entry The criteria range entry to update.
-   * @param option The option to update the criteria range entry with.
-   * @param depth The current recursion depth.
+   * Removes all constraints which are not relevant to the subjects provided.
+   * @param condition The condition to remove irrelevant constraints from.
+   * @param toKeep The subjects to keep.
    */
-  #addOptionToCriteriaRange<R>(
-    currType: ConditionType,
-    parentType: ConditionType,
-    entry: CriteriaRange<R>,
-    option: Record<string, unknown>,
-    depth: number
-  ): CriteriaRange<R> {
-    const lastIdx = entry.options.length - 1;
+  #removeIrrelevantConstraints(
+    condition: Condition,
+    toKeep: string[]
+  ): Condition {
+    const type = this.#objectDiscovery.conditionType(condition);
 
-    // We create new objects in the options array
-    if (["all", "none"].includes(currType) && parentType === "any") {
-      // If we encounter this pair in a deeply nested condition we need to clone
-      // the last option and add the options from the all by either appending
-      // them if the key is new, or replacing the 'any' with the new values.
-      if (depth > 1) {
-        // We should start based on the last option added
-        const baseOption = { ...entry.options[entry.options.length - 1] };
+    // Iterate each node in the condition
+    for (let i = 0; i < condition[type].length; i++) {
+      let node = condition[type][i];
 
-        // If the previous step added anything to the base option then we must first
-        // remove these changes. For condition types of 'Any' or 'None' a step
-        // is created for each property in the condition. Therefore, we must
-        // remove the changes from step(s) which are at the same depth of
-        // the last step.
-        if (this.lastStep?.changes && this.lastStep.changes.length) {
-          const depth = this.lastStep.depth;
+      // If the node is a condition, check if we need to reverse it
+      const isConstraint = this.#objectDiscovery.isConstraint(node);
+      if (isConstraint && !toKeep.includes(node["field"])) {
+        delete condition[type][i];
+      }
 
-          const steps = [...this.#steps];
-          let step = steps.pop();
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        node = this.#removeIrrelevantConstraints(node as Condition, toKeep);
+      }
+    }
 
-          while (step?.depth === depth) {
-            for (const change of step.changes) {
-              if (baseOption[change.key] === change.value) {
-                delete baseOption[change.key];
-              }
+    return this.#stripNullProps(condition);
+  }
 
-              if (Array.isArray(baseOption[change.key])) {
-                baseOption[change.key] = (baseOption[change.key] as []).filter(
-                  (o) =>
-                    Array.isArray(change.value)
-                      ? !change.value.includes(o)
-                      : o != change.value
-                );
-              }
-            }
-            step = steps.pop();
-          }
-        }
+  /**
+   * Flips the operator of a constraint.
+   * @param c The constraint to flip the operator of.
+   */
+  #flipConstraintOperator(c: Constraint): Constraint {
+    if ("==" === c.operator) {
+      c.operator = "!=";
+      return c;
+    }
+    if ("!=" === c.operator) {
+      c.operator = "==";
+      return c;
+    }
+    if (">" === c.operator) {
+      c.operator = "<=";
+      return c;
+    }
+    if ("<" === c.operator) {
+      c.operator = ">=";
+      return c;
+    }
+    if (">=" === c.operator) {
+      c.operator = "<";
+      return c;
+    }
+    if ("<=" === c.operator) {
+      c.operator = ">";
+      return c;
+    }
+    if ("in" === c.operator) {
+      c.operator = "not in";
+      return c;
+    }
+    if ("not in" === c.operator) {
+      c.operator = "in";
+      return c;
+    }
+    if ("contains" === c.operator) {
+      c.operator = "not contains";
+      return c;
+    }
+    if ("not contains" === c.operator) {
+      c.operator = "contains";
+      return c;
+    }
+    if ("contains any" === c.operator) {
+      c.operator = "not contains any";
+      return c;
+    }
+    if ("not contains any" === c.operator) {
+      c.operator = "contains any";
+      return c;
+    }
+    if ("matches" === c.operator) {
+      c.operator = "not matches";
+      return c;
+    }
+    if ("not matches" === c.operator) {
+      c.operator = "matches";
+      return c;
+    }
 
-        for (const [key, value] of Object.entries(option)) {
-          baseOption[key] = baseOption.hasOwnProperty(key)
-            ? [...new Set([baseOption[key], value].flat())]
-            : value;
-        }
+    return c;
+  }
 
-        this.#steps.push({
-          parentType,
-          currType,
-          depth,
-          option: baseOption,
+  /**
+   * Removes all null properties from an object.
+   * @param obj The object to remove null properties from.
+   * @param defaults The default values to remove.
+   */
+  #stripNullProps(
+    obj: Record<string, any>,
+    defaults: any[] = [undefined, null, NaN, ""]
+  ) {
+    if (defaults.includes(obj)) return;
+
+    if (Array.isArray(obj))
+      return obj
+        .map((v) =>
+          v && typeof v === "object" ? this.#stripNullProps(v, defaults) : v
+        )
+        .filter((v) => !defaults.includes(v));
+
+    return Object.entries(obj).length
+      ? Object.entries(obj)
+          .map(([k, v]) => [
+            k,
+            v && typeof v === "object" ? this.#stripNullProps(v, defaults) : v,
+          ])
+          .reduce(
+            (a, [k, v]) => (defaults.includes(v) ? a : { ...a, [k]: v }),
+            {}
+          )
+      : obj;
+  }
+
+  /**
+   * Extracts all sub-rules from a condition.
+   * @param condition The condition to extract sub-rules from.
+   * @param results The sub-conditions result set
+   * @param root The root condition which holds the condition to extract sub-rules from.
+   */
+  #extractSubRules(
+    condition: Condition,
+    results: SubRuleResult[] = [],
+    root?: Condition
+  ): SubRuleResult[] {
+    if (!root) root = condition;
+
+    // Iterate each node in the condition
+    const type = this.#objectDiscovery.conditionType(condition);
+    for (const node of condition[type]) {
+      // If the node is a sub-rule we need to extract it, using the condition as it's parent
+      if (this.#objectDiscovery.isConditionWithResult(node)) {
+        results.push({
+          parent: this.#removeAllSubRules(root),
+          subRule: this.#removeAllSubRules(node),
         });
 
-        Logger.debug(
-          `Introspector: + new option to criteria range based on last root parent`
-        );
+        // Recursively find sub-rules in the sub-rule
+        for (const element of this.#asArray(node)) {
+          // Ignore constraints
+          if (!this.#objectDiscovery.isCondition(element)) continue;
+          results = this.#extractSubRules(element, results, root);
+        }
 
-        entry.options.push(baseOption);
-        return entry;
+        // Do not re-process as a condition
+        continue;
       }
 
-      this.#steps.push({ parentType, currType, depth, option });
-      Logger.debug(`Introspector: + new option to criteria range`);
-
-      entry.options.push(option);
-      return entry;
-    }
-
-    // We add these options onto the last object in the options array
-    if (
-      ("any" === currType && "any" === parentType) ||
-      ("any" === currType && ["all", "none"].includes(parentType)) ||
-      (["all", "none"].includes(currType) &&
-        ["all", "none"].includes(parentType))
-    ) {
-      const changes: IntrospectionStep["changes"] = [];
-      for (const [key, value] of Object.entries(option)) {
-        entry.options[lastIdx][key] = entry.options[lastIdx].hasOwnProperty(key)
-          ? [...new Set([entry.options[lastIdx][key], value].flat())]
-          : value;
-
-        changes.push({ key, value });
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        results = this.#extractSubRules(node, results, root);
       }
-
-      this.#steps.push({
-        parentType,
-        currType,
-        depth,
-        option: entry.options[lastIdx],
-        changes,
-      });
-
-      Logger.debug(`Introspector: Updating previous option with new values"`);
-
-      return entry;
     }
 
-    this.#steps.push({ parentType, currType, depth, option });
-    Logger.debug(`Introspector: + new option to criteria range`);
-
-    entry.options.push(option);
-    return entry;
+    return results;
   }
 
   /**
-   * Checks if the current condition being introspected is the child
-   * of some parent condition with a given type.
-   * @param parentType The type of the parent condition.
+   * Removes all subrules from the provided condition.
+   * @param haystack The condition to search in and remove all sub-rules from.
    */
-  #isCurrentStepChildOf(parentType: ConditionType): boolean {
-    if (!this.#steps?.length) {
-      return false;
+  #removeAllSubRules(haystack: Condition): Condition {
+    // Clone the condition so that we can modify it
+    const clone = JSON.parse(JSON.stringify(haystack));
+
+    // Iterate over each node in the condition
+    const type = this.#objectDiscovery.conditionType(clone);
+    for (let i = 0; i < clone[type].length; i++) {
+      // Check if the current node is a sub-rule
+      if (this.#objectDiscovery.isConditionWithResult(clone[type][i])) {
+        // Remove the node from the cloned object
+        clone[type].splice(i, 1);
+
+        // If the node is now empty, we can prune it
+        if (Array.isArray(clone[type]) && !clone[type].length) return null;
+        continue;
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(clone[type][i])) {
+        clone[type][i] = this.#removeAllSubRules(clone[type][i]);
+      }
     }
 
-    // Clone the steps array so that we can pop items off it
-    const steps = [...this.#steps];
-    let step = steps.pop();
-
-    // Check ancestors until we reach the first root condition
-    while (step?.depth >= 0) {
-      if (step.currType === parentType || step.parentType === parentType)
-        return true;
-
-      step = steps.pop();
-    }
-
-    return false;
+    return this.#stripNullProps(clone);
   }
 
   /**
@@ -694,8 +353,864 @@ export class Introspector {
     return Array.isArray(value) ? value : [value];
   }
 
-  /** Returns the last step in the introspection process. */
-  get lastStep(): IntrospectionStep | null {
-    return this.#steps?.length ? this.#steps[this.#steps.length - 1] : null;
+  /**
+   * Extracts all the possible combinations of criteria from the condition which are
+   * self-consistent to the condition passing.
+   * @param condition The condition to introspect.
+   * @param input The constraint passed as an input to the introspection.
+   * @param parentType The type of the parent condition.
+   * @param parentResults The parent condition results.
+   * @param depth The current recursion depth.
+   */
+  #introspectConditions(
+    condition: Condition,
+    input: Omit<Constraint, "operator">,
+    parentType: keyof Condition = null,
+    parentResults: Map<string, Constraint[]> = new Map(),
+    depth: number = 0
+  ): ConditionResult {
+    // Prepare the lists
+    const conditions: Condition[] = [];
+    const groupedConst: Map<string, Constraint[]> = new Map();
+
+    // Iterate over each node in the condition
+    const type = this.#objectDiscovery.conditionType(condition);
+    for (const node of condition[type]) {
+      if (this.#objectDiscovery.isCondition(node)) {
+        // Process the 'all' conditions before the 'any' conditions
+        if ("all" === this.#objectDiscovery.conditionType(node))
+          conditions.unshift(node);
+        else conditions.push(node);
+      }
+      if (this.#objectDiscovery.isConstraint(node)) {
+        this.#appendResult(groupedConst, node);
+      }
+    }
+
+    const gap = "  ".repeat(depth);
+    const msg =
+      0 === depth
+        ? `\nIntrospecting "${Logger.bold(type)}" condition`
+        : `${gap}--> "${Logger.bold(type)}" condition`;
+    Logger.debug(msg);
+
+    // Prepare the local results
+    let clearLocal = false;
+    let results: Map<string, Constraint[]> = new Map();
+
+    // Iterate over all grouped constraints
+    for (const [field, constraints] of groupedConst.entries()) {
+      // Prepare the candidates for this field type
+      let candidates = results.get(field) ?? [];
+
+      if (clearLocal) continue;
+
+      // Test the constraints and prepare the local results
+      ////////////////////////////////////////////////////////////
+      for (const c of constraints) {
+        // Append to local results
+        if ("any" === type) {
+          const col = Logger.color(c.field, "g");
+          const val = Logger.color(c.value, "y");
+          const msg = ` ${gap}+ Adding local '${col}'${c.operator}'${val}'`;
+          Logger.debug(msg, `(${Logger.color("pass", "g")})`);
+
+          candidates.push(c);
+        }
+
+        if ("all" === type) {
+          if (!this.test(candidates, input, c, depth)) {
+            candidates = [];
+            clearLocal = true;
+            Logger.debug(` ${gap}- Clearing local candidates...`);
+            break;
+          }
+
+          const col = Logger.color(c.field, "g");
+          const val = Logger.color(c.value, "y");
+          const msg = ` ${gap}+ Adding local '${col}'${c.operator}'${val}'`;
+          Logger.debug(msg, `(${Logger.color("pass", "g")})`);
+
+          candidates.push(c);
+        }
+      }
+
+      // Store the updated candidates into the local results
+      results.set(field, candidates);
+    }
+
+    if (clearLocal) results = new Map();
+
+    ////////////////////////////////////////////////////////////
+
+    // Merge the local results with the parent results
+    ////////////////////////////////////////////////////////////
+    if (null === parentType) {
+      for (const [_, candidates] of results.entries()) {
+        for (const c of candidates) this.#appendResult(parentResults, c);
+      }
+    }
+
+    if ("any" === parentType) {
+      if ("any" === type) {
+        for (const [_, candidates] of results.entries()) {
+          for (const c of candidates) this.#appendResult(parentResults, c);
+        }
+      }
+
+      if ("all" === type) {
+        for (const [_, candidates] of results.entries()) {
+          if (!candidates.length) {
+            Logger.debug(`${gap}X Exiting...`);
+            return { values: parentResults, stop: true, void: false };
+          }
+
+          for (const c of candidates) this.#appendResult(parentResults, c);
+        }
+      }
+    }
+
+    if ("all" === parentType) {
+      if ("any" === type) {
+        const valid = [];
+        for (const [field, candidates] of results.entries()) {
+          for (const c of candidates) {
+            const parentRes = parentResults.get(field) ?? [];
+            if (this.test(parentRes, input, c, depth)) valid.push(c);
+          }
+        }
+
+        if (!valid.length) {
+          Logger.debug(
+            `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+          );
+          return { values: parentResults, stop: true, void: true };
+        }
+
+        for (const c of valid) this.#appendResult(parentResults, c);
+      }
+
+      if ("all" === type) {
+        // We assume all constraints are valid until proven otherwise,
+        // However if the list is empty we must say that no constraint has passed.
+        let allPass = Array.from(results.values()).flat().length > 0;
+
+        for (const [field, candidates] of results.entries()) {
+          for (const c of candidates) {
+            const parentRes = parentResults.get(field) ?? [];
+            if (!this.test(parentRes, input, c, depth)) allPass = false;
+          }
+        }
+
+        if (!allPass) {
+          Logger.debug(
+            `${gap}${Logger.color("Exiting & Discarding results...", "r")}`
+          );
+          return { values: parentResults, stop: true, void: true };
+        }
+
+        for (const [_, candidates] of results.entries()) {
+          for (const c of candidates) {
+            this.#appendResult(parentResults, c);
+          }
+        }
+      }
+    }
+    ////////////////////////////////////////////////////////////
+
+    // Log the results
+    ////////////////////////////////////////////////////////////
+    for (const [k, v] of parentResults.entries()) {
+      const values = [];
+      for (const c of v) {
+        values.push(`${c.operator}${Logger.color(c.value, "y")}`);
+      }
+
+      const msg = ` ${gap}${Logger.color("* Candidates", "m")} `;
+      Logger.debug(`${msg}${Logger.color(k, "g")}: [${values.join(", ")}]`);
+    }
+    ////////////////////////////////////////////////////////////
+
+    // Sanitize the results
+    ////////////////////////////////////////////////////////////
+    for (const [field, constraints] of parentResults.entries()) {
+      parentResults.set(field, this.sanitize(constraints, depth));
+    }
+    ////////////////////////////////////////////////////////////
+
+    // Iterate over all conditions
+    ////////////////////////////////////////////////////////////
+    for (const c of conditions) {
+      // Introspect the condition and append the results to the parent results
+      const d = depth + 1;
+      const res = this.#introspectConditions(c, input, type, parentResults, d);
+
+      if (res.void) parentResults = new Map();
+      else parentResults = res.values;
+
+      if (res.stop)
+        return { values: parentResults, stop: res.stop, void: res.void };
+    }
+    //////////////////////////////////////////
+
+    return { values: parentResults, stop: false, void: false };
   }
+
+  /**
+   * Appends a constraint to the provided map based placing the constraint in a
+   * group based on its field.
+   * @param map The map to append the constraint to.
+   * @param c The constraint to append.
+   */
+  #appendResult(map: Map<string, Constraint[]>, c: Constraint): void {
+    const temp = map.get(c.field) ?? [];
+    map.set(c.field, temp);
+
+    // Do not add duplicate constraints
+    if (temp.some((t) => JSON.stringify(t) === JSON.stringify(c))) return;
+
+    temp.push(c);
+  }
+
+  /**
+   * Given a list of valid candidates and the input used in the introspection, this method
+   * tests a new constraint (item) returning true if the item is self-consistent with the
+   * candidates and the input.
+   *
+   * Testing happens by considering each item in the list as linked by an AND
+   * @param candidates The result candidates to test against.
+   * @param input The constraint which was input to the introspection.
+   * @param item The constraint item to test against the candidates.
+   * @param depth The current recursion depth.
+   */
+  protected test(
+    candidates: Constraint[],
+    input: Omit<Constraint, "operator">,
+    item: Constraint,
+    depth: number
+  ): boolean {
+    // Filter out results which do not match the field of the constraint
+    candidates = candidates.filter((r) => r.field === item.field);
+
+    // Add the input constraint to the results (if it also matches the field)
+    if (input.field === item.field) {
+      candidates.push({ ...input, operator: "==" });
+    }
+
+    // Test that the constraint does not breach the results
+    // The test constraint needs to be compared against all the results
+    // and has to pass all the tests to be considered valid
+    let result = true;
+    for (const c of candidates) {
+      let ops: any;
+
+      // Extract the item properties to test with
+      const { value, operator } = item;
+
+      switch (c.operator) {
+        case "==":
+          /**
+           *  c = (L == 500)
+           *  L == 500
+           *  L != !500
+           *  L >= 500
+           *  L <= 500
+           *  L > 499
+           *  L < 501
+           *  L IN [500]
+           *  L NOT IN [501, 502]
+           */
+
+          // Must be equal to the value
+          if ("==" === operator && value !== c.value) result = false;
+
+          // Item value must allow for constraint value to exist in item value range
+          if ("<=" === operator && value < c.value) result = false;
+          if (">=" === operator && value > c.value) result = false;
+
+          // Item value must allow for constraint value to exist in item value range
+          if ("<" === operator && value <= c.value) result = false;
+          if (">" === operator && value >= c.value) result = false;
+
+          // Item value cannot be equal to constraint value
+          if ("!=" === operator && value === c.value) result = false;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val === c.value))
+              result = false;
+          }
+
+          // None of the values in the item must match the candidate value
+          if ("not in" === operator) {
+            if (this.#asArray(value).some((val) => val === c.value))
+              result = false;
+          }
+          break;
+        case "!=":
+          /**
+           *  c = (L != 500)
+           *  L == !500
+           *  L != any
+           *  L >= any
+           *  L <= any
+           *  L > any
+           *  L < any
+           *  L IN [500, 502]
+           *  L NOT IN [499,500]
+           */
+
+          // Must be different
+          if ("==" === operator && value === c.value) result = false;
+
+          // // Always pass
+          // ops = ["!=", ">", ">=", "<", "<=", "not in"];
+          // if (ops.includes(operator)) result = true;
+
+          // One of the values in the item must NOT match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val !== c.value))
+              result = false;
+          }
+          break;
+        case ">":
+          /**
+           *  c = (L > 500)
+           *  L == 501↑
+           *  L != any
+           *  L >= any
+           *  L <= 501↑
+           *  L > any
+           *  L < 502↑
+           *  IN [501, 502]
+           *  NOT IN [501, 502]
+           */
+
+          // Always pass ["!=", ">", ">=", "not in"]
+
+          // Must be bigger than the value
+          ops = ["==", "<="];
+          if (ops.includes(operator) && value <= c.value) result = false;
+
+          if ("<" === operator && Number(value) <= Number(c.value) + 2)
+            result = false;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val > c.value))
+              result = false;
+          }
+          break;
+        case "<":
+          /**
+           *  c = (L < 500)
+           *  L == 499↓
+           *  L != any
+           *  L >= 499↓
+           *  L <= any
+           *  L > 498↓
+           *  L < any
+           *  IN [499, 500]
+           */
+
+          // Always pass ["!=", "<", "<=", "not in"]
+
+          // Must be smaller than the value
+          ops = ["==", ">="];
+          if (ops.includes(operator) && value >= c.value) result = false;
+
+          if (">" === operator && Number(value) >= Number(c.value) - 2)
+            result = false;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val < c.value))
+              result = false;
+          }
+          break;
+        case ">=":
+          /**
+           *  c = (L >= 500)
+           *  L == 500↑
+           *  L != any
+           *  L >= any
+           *  L <= 500↑
+           *  L > any
+           *  L < 501↑
+           *  L IN [500, 501]
+           */
+
+          // Always pass ["!=", ">=", ">", "not in"]
+
+          // Must be bigger than the value
+          ops = ["==", "<="];
+          if (ops.includes(operator) && value < c.value) result = false;
+
+          if ("<" === operator && Number(value) < Number(c.value) + 1)
+            result = false;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val >= c.value))
+              result = false;
+          }
+          break;
+        case "<=":
+          /**
+           *  c = (L <= 500)
+           *  L == 500↓
+           *  L != any
+           *  L >= 500↓
+           *  L <= any
+           *  L > 499↓
+           *  L < any
+           */
+
+          // Always pass ["!=", "<=", "<", "not in"]
+
+          // Must be smaller than the value
+          ops = ["==", ">="];
+          if (ops.includes(operator) && value > c.value) result = false;
+
+          if (">" === operator && Number(value) > Number(c.value) - 1)
+            result = false;
+
+          // One of the values in the item must match the candidate value
+          if ("in" === operator) {
+            if (!this.#asArray(value).some((val) => val <= c.value))
+              result = false;
+          }
+          break;
+        case "in":
+          /**
+           *  c = (L [500,501)
+           *  IN [500, 502]
+           *  NOT IN [499, 500]
+           */
+          result = false;
+
+          // At least 1 item from list must pass
+          // For each item run the same checks as for the '==' operator
+          for (const subVal of this.#asArray(c.value)) {
+            // Must be equal to the value
+            if ("==" === operator && value === subVal) {
+              result = true;
+            }
+
+            // Item value must allow for constraint value to exist in item value range
+            if ("<=" === operator && value >= subVal) {
+              result = true;
+            }
+            if (">=" === operator && value <= subVal) {
+              result = true;
+            }
+
+            // Item value must allow for constraint value to exist in item value range
+            if ("<" === operator && value > subVal) {
+              result = true;
+            }
+            if (">" === operator && value < subVal) {
+              result = true;
+            }
+
+            // Item value cannot be equal to constraint value
+            if ("!=" === operator && value !== subVal) {
+              result = true;
+            }
+          }
+
+          const inValues = this.#asArray(c.value);
+
+          // One of the values in the item must match any candidate values
+          if ("in" === operator) {
+            if (this.#asArray(value).some((val) => inValues.includes(val)))
+              result = true;
+          }
+
+          // One of the values in the item must NOT match any candidate values
+          if ("not in" === operator) {
+            if (this.#asArray(value).some((val) => !inValues.includes(val)))
+              result = true;
+          }
+          break;
+        case "not in":
+          /**
+           *  c = (L NOT IN [500,501)
+           *  IN [499, 501]
+           *  NOT IN [500, 499]
+           */
+          result = true;
+
+          // All items from list must pass
+          for (const subVal of this.#asArray(c.value)) {
+            // Must be different
+            if ("==" === operator && value === subVal) {
+              result = false;
+            }
+          }
+
+          const notInValues = this.#asArray(c.value);
+
+          // One of the values in the item must NOT match any candidate values
+          if ("in" === operator) {
+            result = false;
+            if (this.#asArray(value).some((val) => !notInValues.includes(val)))
+              result = true;
+          }
+          break;
+        // case "contains":
+        //   break;
+        // case "not contains":
+        //   break;
+        // case "contains any":
+        //   break;
+        // case "not contains any":
+        //   break;
+        // case "matches":
+        //   break;
+        // case "not matches":
+        //   break;
+      }
+    }
+
+    // Prepare the log
+    const gap = "  ".repeat(depth);
+    const col = Logger.color(item.field, "g");
+    const val = Logger.color(item.value, "y");
+    const pass = Logger.color("pass", "g");
+    const fail = Logger.color("fail", "r");
+
+    const msg = ` ${gap}> Testing '${col}'${item.operator}'${val}'`;
+    Logger.debug(msg, `(${result ? pass : fail})`);
+
+    // Return the result
+    return result;
+  }
+
+  /**
+   * Takes a list of constraints which represent the possible values for a field which satisfy a rule
+   * and sanitizes the list to remove any constraints which are redundant. This method will convert the
+   * list of constraints to the smallest possible list of constraints which still represent the same
+   * possible values for the field.
+   *
+   * Sanitization happens by considering each item in the list as linked by an OR
+   * @param constraints The constraints to sanitize.
+   * @param depth The current recursion depth.
+   */
+  protected sanitize(constraints: Constraint[], depth: number): Constraint[] {
+    // Create a results list which we can modify
+    let results = JSON.parse(JSON.stringify(constraints));
+
+    // Clone the constraints so that we can modify them in needed
+    for (const sub of JSON.parse(JSON.stringify(constraints))) {
+      const op = sub.operator;
+      const val = sub.value;
+
+      // Clone the list and iterate again
+      for (const c of JSON.parse(JSON.stringify(constraints))) {
+        // If the clone and the subject are the same, skip
+        if (JSON.stringify(c) === JSON.stringify(sub)) continue;
+
+        if (">=" === op) {
+          if ("==" === c.operator && c.value === val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+
+          if (">" === c.operator) {
+            // >=500, >500+ (remove >500+)
+            if (c.value >= val) results = this.#removeItem(c, results);
+            // >=500, >499- (remove >=500)
+            if (c.value < val) results = this.#removeItem(sub, results);
+
+            return this.sanitize(results, depth);
+          }
+
+          if (">=" === c.operator) {
+            // >=500, >=500+ (remove >=500+)
+            if (c.value >= val) results = this.#removeItem(c, results);
+            // >=500, >=499- (remove >=500)
+            if (c.value < val) results = this.#removeItem(sub, results);
+
+            return this.sanitize(results, depth);
+          }
+        }
+
+        if ("<=" === op) {
+          if ("==" === c.operator && c.value === val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+
+          if ("<" === c.operator) {
+            // <=500, <500- (remove <500-)
+            if (c.value <= val) results = this.#removeItem(c, results);
+            // <=500, <501+ (remove >=500)
+            if (c.value > val) results = this.#removeItem(sub, results);
+
+            return this.sanitize(results, depth);
+          }
+
+          if ("<=" === c.operator) {
+            // <=500, <500- (remove <500-)
+            if (c.value <= val) results = this.#removeItem(c, results);
+            // <=500, <501+ (remove >=500)
+            if (c.value > val) results = this.#removeItem(sub, results);
+
+            return this.sanitize(results, depth);
+          }
+        }
+
+        if (">" === op) {
+          if ("==" === c.operator && c.value > val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, operator: ">=" });
+
+            return this.sanitize(results, depth);
+          }
+
+          if (">" === c.operator && c.value >= val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+        }
+
+        if ("<" === op) {
+          if ("==" === c.operator && c.value < val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+
+          if ("==" === c.operator && c.value === val) {
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, operator: "<=" });
+
+            return this.sanitize(results, depth);
+          }
+
+          if ("<" === c.operator && c.value <= val) {
+            return this.sanitize(this.#removeItem(c, results), depth);
+          }
+        }
+
+        if ("in" === op) {
+          // We join the two lists and remove the duplicates
+          if ("in" === c.operator) {
+            const set = new Set([
+              ...this.#asArray(val),
+              ...this.#asArray(c.value),
+            ]);
+
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, value: [...set].sort() });
+
+            return this.sanitize(results, depth);
+          }
+        }
+
+        if ("not in" === op) {
+          // We join the two lists and remove the duplicates
+          if ("not in" === c.operator) {
+            const set = new Set([
+              ...this.#asArray(val),
+              ...this.#asArray(c.value),
+            ]);
+
+            results = this.#removeItem(c, this.#removeItem(sub, results));
+            results.push({ ...sub, value: [...set].sort() });
+
+            return this.sanitize(results, depth);
+          }
+        }
+      }
+
+      // If the list has 1 item, we convert to ==
+      if (["in"].includes(op)) {
+        if (1 === this.#asArray(sub.value).length) {
+          results = this.#removeItem(sub, results);
+          results.push({ field: sub.field, operator: "==", value: val });
+
+          return this.sanitize(results, depth);
+        }
+      }
+
+      // If the list has 1 item, we convert to !=
+      if (["not in"].includes(op)) {
+        if (1 === this.#asArray(sub.value).length) {
+          results = this.#removeItem(sub, results);
+          results.push({ field: sub.field, operator: "!=", value: val });
+
+          return this.sanitize(results, depth);
+        }
+      }
+    }
+
+    const gap = "  ".repeat(depth);
+    const msg = ` ${gap}${Logger.color(`* Sanitized`, "b")}`;
+    const values = results.map(
+      (c: Constraint) => `${c.operator}${Logger.color(c.value, "m")}`
+    );
+
+    Logger.debug(`${msg} [${values.join(", ")}]`);
+    return results;
+  }
+
+  /**
+   * Remove the provided sub-rule needle from the haystack condition
+   * @param node The node to remove.
+   * @param haystack The condition to search in and remove the sub-rule from.
+   */
+  #removeNode(node: Record<string, any>, haystack: Condition): Condition {
+    // Clone the condition so that we can modify it
+    const clone = JSON.parse(JSON.stringify(haystack));
+
+    // Iterate over each node in the condition
+    const type = this.#objectDiscovery.conditionType(clone);
+    for (let i = 0; i < clone[type].length; i++) {
+      // Check if the current node is the node we are looking for
+      if (JSON.stringify(clone[type][i]) == JSON.stringify(node)) {
+        // Remove the node from the cloned object
+        clone[type].splice(i, 1);
+
+        // If the node is now empty, we can prune it
+        if (Array.isArray(clone[type]) && !clone[type].length) return null;
+        continue;
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(clone[type][i])) {
+        clone[type][i] = this.#removeNode(node, clone[type][i]);
+      }
+    }
+
+    return this.#stripNullProps(clone);
+  }
+
+  /**
+   * Remove the provided item needle from the haystack list
+   * @param needle The item to find and remove.
+   * @param haystack The list to search in and remove from.
+   */
+  #removeItem<R = any>(needle: any, haystack: R[]): R[] {
+    return haystack.filter(
+      (r: any) => JSON.stringify(r) !== JSON.stringify(needle)
+    );
+  }
+
+  /**
+   * Checks if a condition has a constraint with the provided field.
+   * @param field The field to check for.
+   * @param haystack The condition to search in.
+   */
+  #hasConstraintField(field: string, haystack: Condition): boolean {
+    // Iterate over each node in the condition
+    const type = this.#objectDiscovery.conditionType(haystack);
+    for (let i = 0; i < haystack[type].length; i++) {
+      const node = haystack[type][i];
+
+      // If the node is a constraint, check if it has the field we are looking for
+      if (this.#objectDiscovery.isConstraint(node) && node.field === field) {
+        return true;
+      }
+
+      // If the node is a condition, recurse
+      if (this.#objectDiscovery.isCondition(node)) {
+        return this.#hasConstraintField(field, node);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Test Routine:
+   * We check each test item against the entire list of results.
+   * The test should be an AND format, this means that the test item AND each list item must be possible
+   *
+   * If the current type is “any” -> we just append the items
+   * If the current type is “all” -> we need to test the items against each other and all need to pass for them to be added.
+   *
+   * When merging up:
+   * If the parent type is “any”
+   *  current type “any” -> we can just append the items
+   *  current type “all” -> we can just append the items
+   * If the parent type is “all”
+   *  current type “any” -> We need to test each item against the parent set, if any passes we add it in. The ones that fail do not get added. If none pass we stop
+   *  current type “all” -> We need to test each item against the parent set, all must pass and all get added or none get added. If all do not pass we stop
+   *
+   * When to stop:
+   * If parent is null
+   *  “all” None pass STOP
+   *  “any” None pass do not stop
+   *
+   * If parent is any
+   *  “all” None pass do not stop
+   *  “any” None pass do not stop
+   *
+   * If parent is all
+   *  “all” None pass STOP
+   *  “any” None pass STOP
+   *
+   * Algorithm:
+   *  -> Prepare all constraints as array
+   *  -> Prepare all conditions as array
+   *    -> Sort the array to push ‘all’ conditions to the start
+   *  -> Check constraints first
+   *    ->  If parent is NULL
+   *      -> if type is any
+   *        -> add const fields/values to subject results (append)
+   *       -> if type is all
+   *        -> group const by field (and foreach group)
+   *        -> test each const does not breach local group results or subject value
+   *          -> if it passes
+   *            -> add to local group results
+   *          -> if fails
+   *            -> empty the local/global results for all subjects
+   *            -> stop processing any conditions under this node.
+   *          -> if all pass send local to global
+   *
+   *      -> If parent is any
+   *        -> if type is any
+   *          we continue adding const fields/values to subject results (append)
+   *        -> if type is all
+   *          -> group const by field (and foreach group)
+   *          -> test each const does not breach local group results or subject value
+   *            -> if it passes
+   *              -> add to local group results
+   *            -> if fails
+   *              -> empty the local results for all subjects
+   *              -> stop processing any conditions under this node.
+   *              -> do not empty global results.
+   *            -> if some pass (all will pass)
+   *              -> add local to global results
+   *
+   *      -> If parent is all
+   *        -> if type is any
+   *          -> group const by field (and foreach group)
+   *            -> bal group results or subject value
+   *              -> if passes
+   *                -> add to global group results
+   *              -> if fails
+   *                -> do not add
+   *              -> if all fail
+   *                -> empty the local/global results for all subjects
+   *                -> stop processing any conditions under this node.
+   *        -> if type is all
+   *          -> group const by field (and foreach group)
+   *          -> test each const does not breach local group results or subject value
+   *            -> if it passes
+   *              -> add to local group results
+   *              -> test against global results
+   *                -> if it passes
+   *                  -> add to global group results
+   *                -> if fails
+   *                  -> empty the global results for all subjects
+   *                  -> stop processing any conditions under this node.
+   *            -> if fails
+   *              -> empty the global results for all subjects
+   *              -> stop processing any conditions under this node.
+   *
+   *  -> Check conditions array
+   *    -> recurse each condition
+   */
 }

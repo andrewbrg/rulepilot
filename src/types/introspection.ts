@@ -1,9 +1,5 @@
-export interface CriteriaRange<R = any> {
-  result: R;
-  options?: Record<string, unknown>[];
-}
+import { Constraint } from "./rule";
 
-export interface IntrospectionResult<R = any> {
-  results: CriteriaRange<R>[];
-  default?: R;
+export interface IntrospectionResult {
+  [key: string]: Omit<Constraint, "field">[];
 }

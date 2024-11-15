@@ -428,17 +428,15 @@ let result = await RulePilot.evaluate(rule, criteria); // result = [true, false]
 
 ### Sub Rules
 
-Sub-rules can be used to create early exit points rules by assigning a `rule` property to a condition. This rule property
-will contain a new rule in itself which will be evaluated if the constraints of the host condition are met.
+Sub-rules can be used to create early exit points in a rule by assigning a `result` property to a condition. 
 
-Sub-rules do not need to evaluate to true for their parent condition to pass evaluation. They contain their own result 
-which will be returned if the following conditions are met:
+This value of this result will be returned when the rule is evaluated if all the constraints from the root of the rule 
+to this result are met.
 
-- The parent condition (all criteria and/or nested rules) are met
-- The sub-rule is met
+> Note: Sub-rules do not need to evaluate to true for their parent condition to pass evaluation. 
 
-They provide a convenient way to create complex rules with early exit points and avoid repeating the same constraints 
-in multiple places. 
+Sub-rules provide a convenient way to create complex rules with early exit points and avoid repeating the same 
+constraints in multiple places. 
 
 An example of a sub-rule can be seen below:
 
@@ -449,18 +447,8 @@ const rule: Rule = {
   conditions: {
     any: [
       { field: "profile.age", operator: ">=",  value: 18 },
-      {
-        rule: {
-          conditions: { all: [{ field: "foo", operator: "==", value: 'A' }] },
-          result: 10
-        }
-      },
-      {
-        rule: {
-          conditions: { all: [{ field: "foo", operator: "==", value: 'B' }] },
-          result: 20
-        },
-      }
+      { all: [{ field: "foo", operator: "==", value: 'A' }], result: 10 },
+      { all: [{ field: "foo", operator: "==", value: 'B' }], result: 20 }
     ],
     result: 5
   }
@@ -597,11 +585,13 @@ process.env.DEBUG = "true";
 
 Rule introspection is built into `RulePilot` and can be used to inspect a rule and get information about it.
 
-when `RulePilot` introspects a rule it attempts to determine, for each distinct result set in the rule, the 
-distribution of inputs which will satisfy the rule in a manner which evaluates to said result.
+When `RulePilot` introspects a rule it attempts to determine, for each distinct result in the rule, the 
+distribution of inputs which will satisfy the rule resolving to said result provided an input constraint.
 
-What this means is that given any rule, the introspection feature will return all the possible input combinations 
-which the rule can be evaluated against which will result in all the possible outputs the rule can have.
+For example, using introspection we can ask Rule Pilot the following question:
+
+> Given rule A, If I evaluate the rule with a value X = 100, what are all the possible values of Y for which the rule will
+> evaluate to a result, and what results would the rule evaluate to?
 
 This is a useful feature when you want to know what inputs will result in a specific output, or what inputs will result
 in a specific output distribution.
@@ -641,39 +631,44 @@ const rule: Rule = {
     },
   ],
 };
-
-// Intropect the rule
-const introspection = RulePilot.introspect(rule);
 ```
 
-The following will be returned in the `introspection` variable:
+We can introspect the rule to determine what countries are available to get a discount if the user has a coupon, and what
+the discount amount would be in each case.
+
+```typescript
+const subjects = ["country"];
+const constraint = { field: "hasCoupon", value: true };
+const introspection = RulePilot.introspect(rule, constraint, subjects);
+```
+
+The following will be returned by the `introspection`:
 
 ```json
 {
-  "results": [
-    {
-      "result": 5,
-      "options": [
-        { "country": "SE" },
-        { "country": ["GB", "FI"], "hasCoupon": true, "totalCheckoutPrice": { "operator": ">=", "value": 120 } }
-      ]
-    },
-    {
-      "result": 10,
-      "options": [
-        { "age": { "operator": ">=", "value": 18 }, "hasStudentCard": true }
-      ]
-    }
-  ]
+  "5": {
+    "country": [{ "value": "SE", "operator": "==" }, { "value": ["GB", "FI"], "operator": "in" }]
+  }
 }
 ```
 
-Each possible result that the rule can evaluate to is returned in the `results` array, along with the possible inputs
-which will result in that result in the `options` array.
+```typescript
+const subjects = ["country"];
+const constraint = { field: "totalCheckoutPrice", value: 100 };
+const introspection = RulePilot.introspect(rule, constraint, subjects);
+```
 
-Each object in the `options` array is a set of criteria which must be met in order for the rule to evaluate to the 
-result, we can consider the list of objects in the `options` as an `OR` and the criteria inside each object as 
-an `AND`.
+The following will be returned by the `introspection`:
+
+```json
+{
+  "5": {
+    "country": [{ "value": "SE", "operator": "==" }]
+  }
+}
+```
+
+Each object in the `response` criteria which are possible inputs for the rule to evaluate to the result provided.
 
 Although calculating such results might seem trivial, it can be in fact be quite a complex thing to do especially when 
 dealing with complex rules with multiple nested conditions comprised of many different operators.
@@ -738,18 +733,6 @@ import { RulePilot, Rule } from "rulepilot";
 
 const builder = RulePilot.builder();
 
-const subRule = builder.subRule();
-subRule.add(
-  subRule.condition(
-    "all",
-    [
-      subRule.constraint("color", "==", "green"),
-      subRule.constraint("discount", ">", 20),
-    ], 
-    { price: 10 }
-  )
-);
-
 const rule: Rule = builder
   .add(
     builder.condition(
@@ -758,11 +741,15 @@ const rule: Rule = builder
         builder.condition("any", [
           builder.constraint("size", "==", "medium"),
           builder.constraint("weight", ">=", 2),
+          builder.condition(
+            "all", 
+            [builder.constraint("color", "==", "green"), builder.constraint("discount", ">", 20)],
+            { price: 10 }
+          )
         ]),
         builder.constraint("category", "not in", ["free", "out of stock"]),
       ],
       { price: 20 },
-      subRule
     )
   )
   .add(

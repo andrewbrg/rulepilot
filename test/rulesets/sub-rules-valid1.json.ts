@@ -15,65 +15,53 @@ export const subRulesValid1Json: Rule = {
           value: 500,
         },
         {
-          rule: {
-            conditions: [
-              {
-                all: [
-                  {
-                    field: "CountryIso",
-                    operator: "in",
-                    value: ["GB", "FI"],
-                  },
-                  {
-                    field: "Leverage",
-                    operator: ">",
-                    value: 500,
-                  },
-                  {
-                    field: "Monetization",
-                    operator: "==",
-                    value: "Real",
-                  },
-                  {
-                    rule: {
-                      conditions: [
-                        {
-                          any: [
-                            {
-                              field: "Category",
-                              operator: ">=",
-                              value: 1000,
-                            },
-                            {
-                              field: "Category",
-                              operator: "==",
-                              value: 22,
-                            },
-                            {
-                              any: [
-                                {
-                                  field: "Category",
-                                  operator: "==",
-                                  value: 900,
-                                },
-                                {
-                                  field: "Category",
-                                  operator: "==",
-                                  value: 910,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                      result: 13,
+          all: [
+            {
+              field: "CountryIso",
+              operator: "in",
+              value: ["GB", "FI"],
+            },
+            {
+              field: "Leverage",
+              operator: ">",
+              value: 500,
+            },
+            {
+              field: "Monetization",
+              operator: "==",
+              value: "Real",
+            },
+            {
+              any: [
+                {
+                  field: "Category",
+                  operator: ">=",
+                  value: 1000,
+                },
+                {
+                  field: "Category",
+                  operator: "==",
+                  value: 22,
+                },
+                {
+                  any: [
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 900,
                     },
-                  },
-                ],
-              },
-            ],
-            result: 12,
-          },
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 910,
+                    },
+                  ],
+                },
+              ],
+              result: 13,
+            },
+          ],
+          result: 12,
         },
       ],
       result: 3,

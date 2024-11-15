@@ -72,9 +72,7 @@ export class Validator {
   ): ValidationResult {
     // Check to see if the condition is valid.
     const result = this.#isValidCondition(condition);
-    if (!result.isValid) {
-      return result;
-    }
+    if (!result.isValid) return result;
 
     // Set the type of condition.
     const type = this.#objectDiscovery.conditionType(condition);
@@ -90,14 +88,20 @@ export class Validator {
       };
     }
 
+    // Check if the condition is iterable
+    if (!condition[type].length) {
+      return {
+        isValid: false,
+        error: {
+          message: `The condition '${type}' should not be empty.`,
+          element: condition,
+        },
+      };
+    }
+
     // Validate each item in the condition.
     for (const node of condition[type]) {
-      // If the object is a sub-rule, we should validate it as a new rule
-      if (this.#objectDiscovery.isSubRule(node)) {
-        return this.validate(node.rule);
-      }
-
-      // Otherwise, the object should be a condition or constraint.
+      // The object should be a condition or constraint.
       const isCondition = this.#objectDiscovery.isCondition(node);
       if (isCondition) {
         const subResult = this.#validateCondition(node as Condition, depth + 1);
@@ -116,27 +120,14 @@ export class Validator {
         return {
           isValid: false,
           error: {
-            message: "Each node should be a condition, constraint or sub rule.",
-            element: node,
-          },
-        };
-      }
-
-      // Result is only valid on the root condition.
-      if (depth > 0 && "result" in condition) {
-        return {
-          isValid: false,
-          error: {
-            message: 'Nested conditions cannot have a property "result".',
+            message: "Each node should be a condition or a constraint.",
             element: node,
           },
         };
       }
 
       // If any part fails validation there is no point to continue.
-      if (!result.isValid) {
-        break;
-      }
+      if (!result.isValid) break;
     }
 
     return result;

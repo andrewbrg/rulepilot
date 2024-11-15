@@ -1,11 +1,55 @@
 import { Rule } from "../../src";
 
-// Go through each root condition
-// if any of the nodes is a sub-rule
-// ->
+// Test against Category 900
+// -> Leverage 1000, 500
+// -> Monetization Demo
 
 export const subRulesValid2Json: Rule = {
   conditions: [
+    {
+      none: [
+        {
+          field: "Category",
+          operator: "==",
+          value: 900,
+        },
+        {
+          field: "Leverage",
+          operator: "!=",
+          value: 500,
+        },
+        {
+          any: [
+            {
+              field: "Leverage",
+              operator: "==",
+              value: 1000,
+            },
+            {
+              field: "Leverage",
+              operator: "==",
+              value: 500,
+            },
+            {
+              any: [
+                {
+                  field: "Leverage",
+                  operator: "==",
+                  value: 2000,
+                },
+                {
+                  field: "Leverage",
+                  operator: "==",
+                  value: 1500,
+                },
+              ],
+              result: 100,
+            },
+          ],
+        },
+      ],
+      result: 50,
+    },
     {
       any: [
         {
@@ -21,107 +65,89 @@ export const subRulesValid2Json: Rule = {
         {
           all: [
             {
-              field: "Category",
+              field: "Leverage",
               operator: "==",
               value: "Demo",
             },
             {
-              rule: {
-                conditions: [
-                  {
-                    any: [
-                      {
-                        field: "Category",
-                        operator: ">=",
-                        value: 1000,
-                      },
-                      {
-                        field: "Category",
-                        operator: "==",
-                        value: 22,
-                      },
-                      {
-                        any: [
-                          {
-                            field: "Category",
-                            operator: "==",
-                            value: 900,
-                          },
-                          {
-                            field: "Category",
-                            operator: "==",
-                            value: 910,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-                result: 15,
-              },
+              any: [
+                {
+                  field: "Category",
+                  operator: ">=",
+                  value: 1000,
+                },
+                {
+                  field: "Category",
+                  operator: "==",
+                  value: 22,
+                },
+                {
+                  any: [
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 900,
+                    },
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 910,
+                    },
+                  ],
+                },
+              ],
+              result: 15,
             },
           ],
         },
         {
-          rule: {
-            conditions: [
-              {
-                all: [
-                  {
-                    field: "CountryIso",
-                    operator: "in",
-                    value: ["GB", "FI"],
-                  },
-                  {
-                    field: "Leverage",
-                    operator: ">",
-                    value: 500,
-                  },
-                  {
-                    field: "Monetization",
-                    operator: "==",
-                    value: "Real",
-                  },
-                  {
-                    rule: {
-                      conditions: [
-                        {
-                          any: [
-                            {
-                              field: "Category",
-                              operator: ">=",
-                              value: 1000,
-                            },
-                            {
-                              field: "Category",
-                              operator: "==",
-                              value: 22,
-                            },
-                            {
-                              any: [
-                                {
-                                  field: "Category",
-                                  operator: "==",
-                                  value: 900,
-                                },
-                                {
-                                  field: "Category",
-                                  operator: "==",
-                                  value: 910,
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                      result: 13,
+          all: [
+            {
+              field: "CountryIso",
+              operator: "in",
+              value: ["GB", "FI"],
+            },
+            {
+              field: "Leverage",
+              operator: ">",
+              value: 400,
+            },
+            {
+              field: "Monetization",
+              operator: "==",
+              value: "Real",
+            },
+            {
+              any: [
+                {
+                  field: "Category",
+                  operator: ">=",
+                  value: 1000,
+                },
+                {
+                  field: "Category",
+                  operator: "==",
+                  value: 22,
+                },
+                {
+                  any: [
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 900,
                     },
-                  },
-                ],
-              },
-            ],
-            result: 12,
-          },
+                    {
+                      field: "Category",
+                      operator: "==",
+                      value: 910,
+                    },
+                  ],
+                },
+              ],
+              result: 13,
+            },
+          ],
+          result: 12,
         },
       ],
       result: 3,

@@ -1,6 +1,5 @@
 import { RuleError } from "../errors";
 import { Validator } from "../services";
-import { SubRuleBuilder } from "./sub-rule-builder";
 import { Rule, Operator, Condition, Constraint, ConditionType } from "../types";
 
 export class Builder {
@@ -28,17 +27,14 @@ export class Builder {
    * @param type The type of condition
    * @param nodes Any child nodes of the condition
    * @param result The result of the condition node (for granular rules)
-   * @param subRule A sub-rule to apply to the condition
    */
   condition(
     type: ConditionType,
     nodes: Condition[ConditionType],
-    result?: Condition["result"],
-    subRule?: SubRuleBuilder
+    result?: Condition["result"]
   ): Condition {
     return {
       [type]: nodes,
-      ...(subRule ? { rule: subRule.build() } : {}),
       ...(result ? { result } : {}),
     };
   }
@@ -82,12 +78,5 @@ export class Builder {
     if (validationResult.isValid) return this.#rule;
 
     throw new RuleError(validationResult);
-  }
-
-  /**
-   * Creates a new sub-rule builder
-   */
-  subRule(): SubRuleBuilder {
-    return new SubRuleBuilder();
   }
 }
