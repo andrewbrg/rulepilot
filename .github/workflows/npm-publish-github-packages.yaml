@@ -15,9 +15,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-      - run: yarn
-      - run: yarn build
-      - run: yarn test
+      - run: pnpm
+      - run: pnpm build
+      - run: pnpm test
 
   publish-gpr:
     needs: build
