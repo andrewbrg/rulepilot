@@ -683,6 +683,13 @@ process.env.DEBUG = "true";
 **Note:** Introspection requires a [Granular](#granular-example) rule to be passed to it, otherwise `RulePilot` will 
 throw an `RuleTypeError`.
 
+**Note** Introspection does not yet work with these constraint operators: 
+- `contains`
+- `not contains` 
+- `contains any` 
+- `not contains any`
+- `matches`
+- `not matches`
 
 ## Fluent Rule Builder
 
