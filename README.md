@@ -586,7 +586,7 @@ process.env.DEBUG = "true";
 Rule introspection is built into `RulePilot` and can be used to inspect a rule and get information about it.
 
 When `RulePilot` introspects a rule it attempts to determine, for each distinct result in the rule, the 
-distribution of inputs which will satisfy the rule resolving to said result provided an input constraint.
+distribution of inputs which will satisfy the rule resolving to said result, provided an input criteria.
 
 For example, using introspection we can ask Rule Pilot the following question:
 
@@ -656,6 +656,9 @@ The following will be returned by the `introspection`:
 }]
 ```
 
+We can also ask `RulePilot` to introspect the rule to determine what countries would receive aa discount and what that
+discount would be if the totalCheckoutPrice was 100.
+
 ```typescript
 const subjects = ["country"];
 const constraint = { field: "totalCheckoutPrice", value: 100 };
@@ -676,10 +679,12 @@ The following will be returned by the `introspection`:
 }]
 ```
 
-Each object in the `response` criteria which are possible inputs for the rule to evaluate to the result provided.
+Each object in the `response` criteria which are possible inputs for the rule to evaluate to the result with the criteria
+provided.
 
-Although calculating such results might seem trivial, it can be in fact be quite a complex thing to do especially when 
-dealing with complex rules with multiple nested conditions comprised of many different operators.
+The results from the introspection are sanitized before being returned. This essentially means that if the introspection
+results in these possibilities `price == 10` || `price > 10` || `price == 20`, the results will be sanitized to
+simply `price > 10`.
 
 Similarly to mutations, it is possible to enable debug mode on the introspection feature by setting the environment
 variable `DEBUG="true"`.
@@ -691,7 +696,7 @@ process.env.DEBUG = "true";
 **Note:** Introspection requires a [Granular](#granular-example) rule to be passed to it, otherwise `RulePilot` will 
 throw an `RuleTypeError`.
 
-**Note** Introspection does not yet work with these constraint operators: 
+**Note** Introspection does not yet work with these operators: 
 - `contains`
 - `not contains` 
 - `contains any` 
@@ -758,7 +763,10 @@ const rule: Rule = builder
           builder.constraint("weight", ">=", 2),
           builder.condition(
             "all", 
-            [builder.constraint("color", "==", "green"), builder.constraint("discount", ">", 20)],
+            [
+              builder.constraint("color", "==", "green"), 
+              builder.constraint("discount", ">", 20)
+            ],
             { price: 10 }
           )
         ]),

@@ -23,7 +23,7 @@ export class Introspector {
 
   introspect<R>(
     rule: Rule,
-    constraint: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">,
     subjects: string[]
   ): IntrospectionResult<R>[] {
     // We care about all the possible values for the subjects which will satisfy
@@ -41,7 +41,7 @@ export class Introspector {
       rule.conditions[i] = this.#reverseNoneToAll(rule.conditions[i]);
       rule.conditions[i] = this.#removeIrrelevantConstraints(
         rule.conditions[i],
-        [...subjects, constraint.field]
+        [...subjects, criteria.field]
       );
     }
 
@@ -63,7 +63,7 @@ export class Introspector {
         return;
       }
 
-      const result = rule.subRule.result;
+      const result = rule.subRule?.result ?? "default";
       delete rule.parent.result;
       delete rule.subRule.result;
 
@@ -80,7 +80,7 @@ export class Introspector {
 
     // We introspect the conditions to determine the possible values for the subjects
     for (const condition of conditions) {
-      const { values } = this.#introspectConditions(condition, constraint);
+      const { values } = this.#introspectConditions(condition, criteria);
       if (!values) continue;
 
       const key = condition.result ?? "default";
@@ -365,14 +365,14 @@ export class Introspector {
    * Extracts all the possible combinations of criteria from the condition which are
    * self-consistent to the condition passing.
    * @param condition The condition to introspect.
-   * @param input The constraint passed as an input to the introspection.
+   * @param criteria The constraint passed as an input to the introspection.
    * @param parentType The type of the parent condition.
    * @param parentResults The parent condition results.
    * @param depth The current recursion depth.
    */
   #introspectConditions(
     condition: Condition,
-    input: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">,
     parentType: keyof Condition = null,
     parentResults: Map<string, Constraint[]> = new Map(),
     depth: number = 0
@@ -427,7 +427,7 @@ export class Introspector {
         }
 
         if ("all" === type) {
-          if (!this.test(candidates, input, c, depth)) {
+          if (!this.test(candidates, criteria, c, depth)) {
             candidates = [];
             clearLocal = true;
             Logger.debug(` ${gap}- Clearing local candidates...`);
@@ -484,7 +484,7 @@ export class Introspector {
         for (const [field, candidates] of results.entries()) {
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
-            if (this.test(parentRes, input, c, depth)) valid.push(c);
+            if (this.test(parentRes, criteria, c, depth)) valid.push(c);
           }
         }
 
@@ -506,7 +506,7 @@ export class Introspector {
         for (const [field, candidates] of results.entries()) {
           for (const c of candidates) {
             const parentRes = parentResults.get(field) ?? [];
-            if (!this.test(parentRes, input, c, depth)) allPass = false;
+            if (!this.test(parentRes, criteria, c, depth)) allPass = false;
           }
         }
 
@@ -551,7 +551,13 @@ export class Introspector {
     for (const c of conditions) {
       // Introspect the condition and append the results to the parent results
       const d = depth + 1;
-      const res = this.#introspectConditions(c, input, type, parentResults, d);
+      const res = this.#introspectConditions(
+        c,
+        criteria,
+        type,
+        parentResults,
+        d
+      );
 
       if (res.void) parentResults = new Map();
       else parentResults = res.values;
@@ -587,13 +593,13 @@ export class Introspector {
    *
    * Testing happens by considering each item in the list as linked by an AND
    * @param candidates The result candidates to test against.
-   * @param input The constraint which was input to the introspection.
+   * @param criteria The constraint which was input to the introspection.
    * @param item The constraint item to test against the candidates.
    * @param depth The current recursion depth.
    */
   protected test(
     candidates: Constraint[],
-    input: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">,
     item: Constraint,
     depth: number
   ): boolean {
@@ -601,8 +607,8 @@ export class Introspector {
     candidates = candidates.filter((r) => r.field === item.field);
 
     // Add the input constraint to the results (if it also matches the field)
-    if (input.field === item.field) {
-      candidates.push({ ...input, operator: "==" });
+    if (criteria.field === item.field) {
+      candidates.push({ ...criteria, operator: "==" });
     }
 
     // Test that the constraint does not breach the results
@@ -1064,37 +1070,6 @@ export class Introspector {
   }
 
   /**
-   * Remove the provided sub-rule needle from the haystack condition
-   * @param node The node to remove.
-   * @param haystack The condition to search in and remove the sub-rule from.
-   */
-  #removeNode(node: Record<string, any>, haystack: Condition): Condition {
-    // Clone the condition so that we can modify it
-    const clone = JSON.parse(JSON.stringify(haystack));
-
-    // Iterate over each node in the condition
-    const type = this.#objectDiscovery.conditionType(clone);
-    for (let i = 0; i < clone[type].length; i++) {
-      // Check if the current node is the node we are looking for
-      if (JSON.stringify(clone[type][i]) == JSON.stringify(node)) {
-        // Remove the node from the cloned object
-        clone[type].splice(i, 1);
-
-        // If the node is now empty, we can prune it
-        if (Array.isArray(clone[type]) && !clone[type].length) return null;
-        continue;
-      }
-
-      // If the node is a condition, recurse
-      if (this.#objectDiscovery.isCondition(clone[type][i])) {
-        clone[type][i] = this.#removeNode(node, clone[type][i]);
-      }
-    }
-
-    return this.#stripNullProps(clone);
-  }
-
-  /**
    * Remove the provided item needle from the haystack list
    * @param needle The item to find and remove.
    * @param haystack The list to search in and remove from.
@@ -1103,31 +1078,6 @@ export class Introspector {
     return haystack.filter(
       (r: any) => JSON.stringify(r) !== JSON.stringify(needle)
     );
-  }
-
-  /**
-   * Checks if a condition has a constraint with the provided field.
-   * @param field The field to check for.
-   * @param haystack The condition to search in.
-   */
-  #hasConstraintField(field: string, haystack: Condition): boolean {
-    // Iterate over each node in the condition
-    const type = this.#objectDiscovery.conditionType(haystack);
-    for (let i = 0; i < haystack[type].length; i++) {
-      const node = haystack[type][i];
-
-      // If the node is a constraint, check if it has the field we are looking for
-      if (this.#objectDiscovery.isConstraint(node) && node.field === field) {
-        return true;
-      }
-
-      // If the node is a condition, recurse
-      if (this.#objectDiscovery.isCondition(node)) {
-        return this.#hasConstraintField(field, node);
-      }
-    }
-
-    return false;
   }
 
   /**
