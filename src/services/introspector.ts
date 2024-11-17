@@ -27,14 +27,14 @@ export class Introspector {
     subjects: string[]
   ): IntrospectionResult<R>[] {
     // We care about all the possible values for the subjects which will satisfy
-    // the rule if the rule is tested against the constraint provided.
+    // the rule if the rule is tested against the criteria provided.
 
     // To proceed we must first clone the rule (to avoid modifying the original)
     rule = JSON.parse(JSON.stringify(rule));
 
     // First step is to simplify the rule:
     // 1. Make sure the rule conditions is an array.
-    // 2. Convert any 'none' conditions to an 'all' and reverse operators of all children till the bottom.
+    // 2. Convert any 'none' conditions to an 'all' and reverse operators of all children (recursively).
     // 3. Remove all constraints which are not relevant to the subjects provided.
     rule.conditions = this.#asArray(rule.conditions);
     for (let i = 0; i < rule.conditions.length; i++) {
@@ -57,6 +57,8 @@ export class Introspector {
       conditions.push(this.#removeAllSubRules(rule.conditions[i]));
     }
 
+    // Take each sub-rule we extracted and create a new condition which joins the sub-rule with the
+    // parent condition(s) it must satisfy. We then add this new condition to the list of conditions.
     subRules.forEach((rule) => {
       if (!rule.parent) {
         conditions.push(rule.subRule);
