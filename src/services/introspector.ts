@@ -23,7 +23,7 @@ export class Introspector {
 
   introspect<R>(
     rule: Rule,
-    criteria: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">[],
     subjects: string[]
   ): IntrospectionResult<R>[] {
     // We care about all the possible values for the subjects which will satisfy
@@ -41,7 +41,7 @@ export class Introspector {
       rule.conditions[i] = this.#reverseNoneToAll(rule.conditions[i]);
       rule.conditions[i] = this.#removeIrrelevantConstraints(
         rule.conditions[i],
-        [...subjects, criteria.field]
+        [...subjects, ...criteria.map((c) => c.field)]
       );
     }
 
@@ -374,7 +374,7 @@ export class Introspector {
    */
   #introspectConditions(
     condition: Condition,
-    criteria: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">[],
     parentType: keyof Condition = null,
     parentResults: Map<string, Constraint[]> = new Map(),
     depth: number = 0
@@ -601,7 +601,7 @@ export class Introspector {
    */
   protected test(
     candidates: Constraint[],
-    criteria: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator">[],
     item: Constraint,
     depth: number
   ): boolean {
@@ -609,9 +609,9 @@ export class Introspector {
     candidates = candidates.filter((r) => r.field === item.field);
 
     // Add the input constraint to the results (if it also matches the field)
-    if (criteria.field === item.field) {
-      candidates.push({ ...criteria, operator: "==" });
-    }
+    criteria.forEach((c) => {
+      if (c.field === item.field) candidates.push({ ...c, operator: "==" });
+    });
 
     // Test that the constraint does not breach the results
     // The test constraint needs to be compared against all the results

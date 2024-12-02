@@ -93,14 +93,14 @@ export class RulePilot {
    * the possible range of input criteria which would be satisfied by the rule.
    *
    * @param rule The rule to evaluate.
-   * @param constraint The constraint to introspect against.
+   * @param criteria The criteria to introspect against.
    * @param subjects The subjects to introspect for.
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
   introspect<R = string>(
     rule: Rule,
-    constraint: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator"> | Omit<Constraint, "operator">[],
     subjects: string[]
   ): IntrospectionResult<R>[] {
     // Before we proceed with the rule, we should validate it.
@@ -109,7 +109,11 @@ export class RulePilot {
       throw new RuleError(validationResult);
     }
 
-    return this.#introspector.introspect<R>(rule, constraint, subjects);
+    return this.#introspector.introspect<R>(
+      rule,
+      Array.isArray(criteria) ? criteria : [criteria],
+      subjects
+    );
   }
 
   /**
@@ -157,17 +161,21 @@ export class RulePilot {
    * the possible range of input criteria which would be satisfied by the rule.
    *
    * @param rule The rule to introspect.
-   * @param constraint The constraint to introspect against.
+   * @param criteria The criteria to introspect against.
    * @param subjects The subjects to introspect for.
    * @throws RuleError if the rule is invalid
    * @throws RuleTypeError if the rule is not granular
    */
   static introspect<R = string>(
     rule: Rule,
-    constraint: Omit<Constraint, "operator">,
+    criteria: Omit<Constraint, "operator"> | Omit<Constraint, "operator">[],
     subjects: string[]
   ): IntrospectionResult<R>[] {
-    return RulePilot.#rulePilot.introspect<R>(rule, constraint, subjects);
+    return RulePilot.#rulePilot.introspect<R>(
+      rule,
+      Array.isArray(criteria) ? criteria : [criteria],
+      subjects
+    );
   }
 
   /**
