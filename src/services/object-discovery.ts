@@ -1,3 +1,4 @@
+import { RuleHelper } from "./rule-helper";
 import {
   Rule,
   Condition,
@@ -26,18 +27,29 @@ export class ObjectDiscovery {
    * @param rule The rule to check.
    */
   isGranular(rule: Rule): boolean {
+    const helper: RuleHelper = new RuleHelper();
+
     const conditions =
       rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
 
     // Checks each condition making sure it has a result property.
     for (const condition of conditions) {
-      if (
-        !this.isCondition(condition) ||
-        !("result" in condition) ||
-        undefined === condition.result
-      ) {
+      if (this.isConditionWithResult(condition)) {
         return false;
       }
+
+      // In such cases, we must check for sub-rules in the condition.
+      const items = helper.extractSubRules(condition);
+      if (!items.length) {
+        continue;
+      }
+
+      // Check if any sub-rule has a result property.
+      const result = items.reduce((prev, curr) => {
+        return prev || this.isConditionWithResult(curr.subRule);
+      }, false);
+
+      if (!result) return false;
     }
 
     return true;

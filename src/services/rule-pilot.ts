@@ -117,6 +117,20 @@ export class RulePilot {
   }
 
   /**
+   * Returns the number of outcomes that a rule has.
+   * @param rule The rule to check.
+   */
+  numOutcomes(rule: Rule): number {
+    // Before we proceed with the rule, we should validate it.
+    const validationResult = this.validate(rule);
+    if (!validationResult.isValid) {
+      throw new RuleError(validationResult);
+    }
+
+    return this.#introspector.numOutcomes(rule);
+  }
+
+  /**
    * Takes in a rule as a parameter and returns a ValidationResult
    * indicating whether the rule is valid or not.
    *
@@ -176,6 +190,14 @@ export class RulePilot {
       Array.isArray(criteria) ? criteria : [criteria],
       subjects
     );
+  }
+
+  /**
+   * Returns the number of outcomes that a rule has.
+   * @param rule The rule to check.
+   */
+  static numOutcomes(rule: Rule): number {
+    return RulePilot.#rulePilot.numOutcomes(rule);
   }
 
   /**

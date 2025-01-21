@@ -570,7 +570,7 @@ class IntrospectorSpec extends Introspector {
     input: Omit<Constraint, "operator">,
     item: Constraint
   ): any {
-    return new IntrospectorSpec().test(candidates, input, item, 0);
+    return new IntrospectorSpec().test(candidates, [input], item, 0);
   }
 
   static sanitizeFn(constraints: Constraint[]): any {
