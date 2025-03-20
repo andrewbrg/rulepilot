@@ -174,6 +174,17 @@ export class Validator {
       };
     }
 
+    if (constraint.value === null && !["==", "!=", "contains", "not contains"].includes(constraint.operator)) {
+      return {
+        isValid: false,
+        error: {
+          message:
+            '"operator" must be in ["==", "!=", "contains", "not contains"] if "value" is null.',
+          element: constraint,
+        },
+      };
+    }
+
     // We must check that the value is an array if the operator is 'in' or 'not in'.
     if (
       ["in", "not in", "contains any", "not contains any"].includes(

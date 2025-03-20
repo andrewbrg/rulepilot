@@ -9,6 +9,7 @@ import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
 import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
 import { Operator, RulePilot, RuleError } from "../src";
+import { valid10Json } from "./rulesets/valid10.json";
 
 describe("RulePilot engine correctly", () => {
   it("Evaluates a simple ruleset", async () => {
@@ -305,4 +306,15 @@ describe("RulePilot engine correctly", () => {
       })
     ).toEqual(12);
   });
+
+  it("Evaluates a rule with null values correctly", async () => {
+    expect(await RulePilot.evaluate(valid10Json, {
+      foo: null,
+      bar: "test",
+      foo_array: ["test", null],
+      bar_array: ["test"],
+    })).toEqual(true);
+  });
+
+  
 });
