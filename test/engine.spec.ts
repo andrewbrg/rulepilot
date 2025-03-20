@@ -2,6 +2,7 @@ import { valid1Json } from "./rulesets/valid1.json";
 import { valid2Json } from "./rulesets/valid2.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { valid5Json } from "./rulesets/valid5.json";
+import { valid10Json } from "./rulesets/valid10.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { invalid2Json } from "./rulesets/invalid2.json";
 import { subRulesValid3Json } from "./rulesets/sub-rules-valid3.json";
@@ -9,7 +10,6 @@ import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
 import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
 import { Operator, RulePilot, RuleError } from "../src";
-import { valid10Json } from "./rulesets/valid10.json";
 
 describe("RulePilot engine correctly", () => {
   it("Evaluates a simple ruleset", async () => {
@@ -307,14 +307,25 @@ describe("RulePilot engine correctly", () => {
     ).toEqual(12);
   });
 
-  it("Evaluates a rule with null values correctly", async () => {
-    expect(await RulePilot.evaluate(valid10Json, {
-      foo: null,
-      bar: "test",
-      foo_array: ["test", null],
-      bar_array: ["test"],
-    })).toEqual(true);
+  it("Evaluates a rule with null values correctly - 1/2", async () => {
+    expect(
+      await RulePilot.evaluate(valid10Json, {
+        foo: null,
+        bar: "test",
+        foo_array: ["test", null],
+        bar_array: ["test"],
+      })
+    ).toEqual(true);
   });
 
-  
+  it("Evaluates a rule with null values correctly - 2/2", async () => {
+    expect(
+      await RulePilot.evaluate(valid10Json, {
+        foo: null,
+        bar: "test",
+        foo_array: ["test"],
+        bar_array: ["test"],
+      })
+    ).toEqual(false);
+  });
 });
