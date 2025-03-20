@@ -2,8 +2,10 @@ import { valid1Json } from "./rulesets/valid1.json";
 import { valid3Json } from "./rulesets/valid3.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { subRulesValid1Json } from "./rulesets/sub-rules-valid1.json";
+import { valid10Json } from "./rulesets/valid10.json";
 
 import { Operator, RulePilot, Condition, Constraint } from "../src";
+import { invalid3Json } from "./rulesets/invalid3.json";
 
 describe("RulePilot validator correctly", () => {
   it("Identifies a bad operator", () => {
@@ -94,7 +96,7 @@ describe("RulePilot validator correctly", () => {
     const validation = RulePilot.validate(invalid1Json);
 
     expect(validation.isValid).toEqual(false);
-    expect(validation.error.message).toEqual(
+    expect(validation.error?.message).toEqual(
       "Each node should be a condition or a constraint."
     );
   });
@@ -103,7 +105,7 @@ describe("RulePilot validator correctly", () => {
     const validation = RulePilot.validate({ conditions: [] });
 
     expect(validation.isValid).toEqual(false);
-    expect(validation.error.message).toEqual(
+    expect(validation.error?.message).toEqual(
       "The conditions property must contain at least one condition."
     );
   });
@@ -154,5 +156,11 @@ describe("RulePilot validator correctly", () => {
 
   it("Validates a rule with sub rules correctly", async () => {
     expect(RulePilot.validate(subRulesValid1Json).isValid).toEqual(true);
+  });
+  it("Validates a rule with null values correctly - valid", async () => {
+    expect(RulePilot.validate(valid10Json).isValid).toEqual(true);
+  });
+  it("Validates a rule with null values correctly - invalid", async () => {
+    expect(RulePilot.validate(invalid3Json).isValid).toEqual(false);
   });
 });
