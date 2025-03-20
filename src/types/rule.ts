@@ -26,7 +26,8 @@ export interface Constraint {
     | number
     | boolean
     | Record<string, unknown>
-    | (string | number | boolean | Record<string, unknown>)[];
+    | (string | number | boolean | Record<string, unknown>)[]
+    | null;
 }
 
 export interface Condition<R = any> {
