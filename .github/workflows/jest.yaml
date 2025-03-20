@@ -16,11 +16,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: yarn install
+      - name: Enable PNPM
+        run: corepack enable pnpm
 
       - name: Install dependencies
-        run: yarn build
+        run: pnpm install
+
+      - name: Install dependencies
+        run: pnpm build
 
       - name: Run Jest tests
-        run: yarn test
+        run: pnpm test

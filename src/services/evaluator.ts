@@ -1,3 +1,4 @@
+import { ObjectDiscovery } from "./object-discovery";
 import {
   Rule,
   Condition,
@@ -5,7 +6,6 @@ import {
   WithRequired,
   ConditionType,
 } from "../types";
-import { ObjectDiscovery } from "./object-discovery";
 
 export class Evaluator {
   #objectDiscovery: ObjectDiscovery = new ObjectDiscovery();

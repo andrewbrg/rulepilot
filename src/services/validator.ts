@@ -174,7 +174,10 @@ export class Validator {
       };
     }
 
-    if (constraint.value === null && !["==", "!=", "contains", "not contains"].includes(constraint.operator)) {
+    if (
+      constraint.value === null &&
+      !["==", "!=", "contains", "not contains"].includes(constraint.operator)
+    ) {
       return {
         isValid: false,
         error: {
