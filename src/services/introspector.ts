@@ -118,7 +118,7 @@ export class Introspector {
     const results: IntrospectionResult<R>[] = [];
 
     // We introspect the conditions to determine the possible values for the subjects
-    for (const condition of conditions) {
+    for (const condition of conditions.filter(Boolean)) {
       const { values } = this.#introspectConditions(condition, criteria);
       if (!values) continue;
 

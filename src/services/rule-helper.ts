@@ -27,10 +27,10 @@ export class RuleHelper {
     for (const node of condition[type]) {
       // If the node is a sub-rule we need to extract it, using the condition as it's parent
       if (this.#objectDiscovery.isConditionWithResult(node)) {
-        results.push({
-          parent: this.removeAllSubRules(root),
-          subRule: this.removeAllSubRules(node),
-        });
+        const subRule = this.removeAllSubRules(node);
+        if (subRule) {
+          results.push({ parent: this.removeAllSubRules(root), subRule });
+        }
 
         // Recursively find sub-rules in the sub-rule
         for (const element of this.#asArray(node)) {
@@ -55,7 +55,7 @@ export class RuleHelper {
    * Removes all subrules from the provided condition.
    * @param haystack The condition to search in and remove all sub-rules from.
    */
-  removeAllSubRules(haystack: Condition): Condition {
+  removeAllSubRules(haystack: Condition): Condition | null {
     // Clone the condition so that we can modify it
     const clone = JSON.parse(JSON.stringify(haystack));
 
