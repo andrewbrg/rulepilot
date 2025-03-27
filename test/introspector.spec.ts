@@ -4,6 +4,7 @@ import { valid6Json } from "./rulesets/valid6.json";
 import { valid7Json } from "./rulesets/valid7.json";
 import { valid8Json } from "./rulesets/valid8.json";
 import { valid9Json } from "./rulesets/valid9.json";
+import { valid11Json } from "./rulesets/valid11.json";
 import { invalid1Json } from "./rulesets/invalid1.json";
 import { subRulesValid2Json } from "./rulesets/sub-rules-valid2.json";
 
@@ -557,6 +558,64 @@ describe("RulePilot introspector correctly", () => {
 
     item = { field: "Lev", value: 40, operator: "<=" };
     expect(IntrospectorSpec.testFn(candidates, input, item)).toEqual(true);
+  });
+
+  it("Tests a rule with only sub-rules", async () => {
+    const con = { field: "monetization", value: "demo" };
+
+    expect(RulePilot.introspect(valid11Json, con, ["platform"])).toEqual([]);
+    expect(RulePilot.introspect(valid11Json, con, ["currency"])).toEqual([
+      {
+        result: {
+          groupId: 10997667,
+          spreadPlan: "UBRK-GEN",
+          commissionPlan: "UBRK-GEN-USD",
+        },
+        subjects: [
+          { subject: "currency", values: [{ value: "USD", operator: "==" }] },
+        ],
+      },
+      {
+        result: {
+          groupId: 10997668,
+          spreadPlan: "UBRK-GEN",
+          commissionPlan: "UBRK-GEN-USD",
+        },
+        subjects: [
+          { subject: "currency", values: [{ value: "USD", operator: "==" }] },
+        ],
+      },
+      {
+        result: {
+          groupId: 10997668,
+          spreadPlan: "UBRK-GEN",
+          commissionPlan: "UBRK-GEN-EUR",
+        },
+        subjects: [
+          { subject: "currency", values: [{ value: "EUR", operator: "==" }] },
+        ],
+      },
+      {
+        result: {
+          groupId: 10997668,
+          spreadPlan: "UBRK-GEN",
+          commissionPlan: "UBRK-GEN-BTC",
+        },
+        subjects: [
+          { subject: "currency", values: [{ value: "BTC", operator: "==" }] },
+        ],
+      },
+      {
+        result: {
+          groupId: 10997669,
+          spreadPlan: "UBRK-GEN",
+          commissionPlan: "UBRK-GEN-USD",
+        },
+        subjects: [
+          { subject: "currency", values: [{ value: "USD", operator: "==" }] },
+        ],
+      },
+    ]);
   });
 });
 
