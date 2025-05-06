@@ -684,7 +684,7 @@ provided.
 
 The results from the introspection are sanitized before being returned. This essentially means that if the introspection
 results in these possibilities `price == 10` || `price > 10` || `price == 20`, the results will be sanitized to
-simply `price > 10`.
+simply `price >= 10`.
 
 Similarly to mutations, it is possible to enable debug mode on the introspection feature by setting the environment
 variable `DEBUG="true"`.
