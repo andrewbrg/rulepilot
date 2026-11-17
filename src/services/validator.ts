@@ -31,10 +31,15 @@ export class Validator {
       };
     }
 
+    // Cater for the case where the conditions property is not an array.
+    const conditions = this.#isNil(rule.conditions)
+      ? null
+      : rule.conditions instanceof Array
+      ? rule.conditions
+      : [rule.conditions];
+
     // Check the rule has a default value or at least one condition.
-    const hasDefault = "default" in rule && null !== rule.default && undefined !== rule.default;
-    const hasConditions = "conditions" in rule && null !== rule.conditions && undefined !== rule.conditions;
-    if (!hasDefault && !hasConditions) {
+    if (this.#isNil(rule.default) && this.#isNil(conditions)) {
       return {
         isValid: false,
         error: {
@@ -45,16 +50,17 @@ export class Validator {
     }
 
     // Validate conditions if they exist.
-    if (rule.conditions) {
-      // Cater for the case where the conditions property is not an array.
-      const conditions = rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
-
-      // Validate the 'conditions' property.
-      if (conditions.length === 0 || (this.#objectDiscovery.isObject(conditions[0]) && !Object.keys(conditions[0]).length)) {
+    if (conditions) {
+      if (
+        conditions.length === 0 ||
+        (this.#objectDiscovery.isObject(conditions[0]) &&
+          !Object.keys(conditions[0]).length)
+      ) {
         return {
           isValid: false,
           error: {
-            message: "The conditions property must contain at least one condition.",
+            message:
+              "The conditions property must contain at least one condition.",
             element: rule,
           },
         };
@@ -267,5 +273,9 @@ export class Validator {
     }
 
     return { isValid: true };
+  }
+
+  #isNil(value: any): boolean {
+    return value === null || value === undefined;
   }
 }
