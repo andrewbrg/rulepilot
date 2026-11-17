@@ -32,14 +32,12 @@ export class Validator {
     }
 
     // Cater for the case where the conditions property is not an array.
-    const conditions = this.#isNil(rule.conditions)
-      ? null
-      : rule.conditions instanceof Array
-      ? rule.conditions
-      : [rule.conditions];
+    let conditions: Condition[] =
+      rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
+    conditions = conditions.filter((c) => !this.#isNil(c));
 
     // Check the rule has a default value or at least one condition.
-    if (this.#isNil(rule.default) && this.#isNil(conditions)) {
+    if (this.#isNil(rule.default) && conditions.length === 0) {
       return {
         isValid: false,
         error: {
@@ -49,24 +47,8 @@ export class Validator {
       };
     }
 
-    // Validate conditions if they exist.
-    if (conditions) {
-      if (
-        conditions.length === 0 ||
-        (this.#objectDiscovery.isObject(conditions[0]) &&
-          !Object.keys(conditions[0]).length)
-      ) {
-        return {
-          isValid: false,
-          error: {
-            message:
-              "The conditions property must contain at least one condition.",
-            element: rule,
-          },
-        };
-      }
-
-      // Validate each condition in the rule.
+    // Validate each condition in the rule.
+    if (conditions.length > 0) {
       for (const condition of conditions) {
         const subResult = this.#validateCondition(condition);
         result.isValid = result.isValid && subResult.isValid;
