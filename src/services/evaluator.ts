@@ -23,8 +23,6 @@ export class Evaluator {
    * @param criteria The criteria to evaluate the rule against.
    */
   evaluate<T>(rule: Rule, criteria: object | object[]): T | boolean {
-    rule.conditions = rule.conditions ?? [];
-
     if (criteria instanceof Array) {
       const result: T | boolean[] = [];
       for (const c of criteria) {
@@ -199,7 +197,7 @@ export class Evaluator {
 
     // If the criteria object does not have the field
     // we are looking for, we should return false.
-    if (undefined === criterion || !constraint.value) {
+    if (undefined === criterion) {
       return false;
     }
 
