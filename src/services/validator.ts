@@ -31,31 +31,41 @@ export class Validator {
       };
     }
 
-    // Cater for the case where the conditions property is not an array.
-    const conditions =
-      rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
-
-    // Validate the 'conditions' property.
-    if (
-      conditions.length === 0 ||
-      (this.#objectDiscovery.isObject(conditions[0]) &&
-        !Object.keys(conditions[0]).length)
-    ) {
+    // Check the rule has a default value or at least one condition.
+    const hasDefault = "default" in rule && null !== rule.default && undefined !== rule.default;
+    const hasConditions = "conditions" in rule && null !== rule.conditions && undefined !== rule.conditions;
+    if (!hasDefault && !hasConditions) {
       return {
         isValid: false,
         error: {
-          message:
-            "The conditions property must contain at least one condition.",
+          message: "Rule requires default value or at least one condition.",
           element: rule,
         },
       };
     }
 
-    // Validate each condition in the rule.
-    for (const condition of conditions) {
-      const subResult = this.#validateCondition(condition);
-      result.isValid = result.isValid && subResult.isValid;
-      result.error = result?.error ?? subResult?.error;
+    // Validate conditions if they exist.
+    if (rule.conditions) {
+      // Cater for the case where the conditions property is not an array.
+      const conditions = rule.conditions instanceof Array ? rule.conditions : [rule.conditions];
+
+      // Validate the 'conditions' property.
+      if (conditions.length === 0 || (this.#objectDiscovery.isObject(conditions[0]) && !Object.keys(conditions[0]).length)) {
+        return {
+          isValid: false,
+          error: {
+            message: "The conditions property must contain at least one condition.",
+            element: rule,
+          },
+        };
+      }
+
+      // Validate each condition in the rule.
+      for (const condition of conditions) {
+        const subResult = this.#validateCondition(condition);
+        result.isValid = result.isValid && subResult.isValid;
+        result.error = result?.error ?? subResult?.error;
+      }
     }
 
     return result;
